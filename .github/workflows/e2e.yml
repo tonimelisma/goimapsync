@@ -1,0 +1,119 @@
+name: E2E
+
+# End-to-end test against the throwaway test accounts (D193). Never on
+# pull_request or pull_request_target: a fork must never get the secret.
+# Cloud sessions start it for a branch with
+#   gh api repos/tonimelisma/goimapsync/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'
+# and read the "e2e" commit status of the tested commit: pending, then
+# success, failure, or error when the run was cancelled (dispatch again).
+on:
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [e2e]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or commit to test
+        required: false
+
+run-name: e2e ${{ github.event.client_payload.ref || inputs.ref || github.ref_name }}
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  # Resolves the commit and marks it pending at once, before the queue.
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    env:
+      REF: ${{ github.event.client_payload.ref || inputs.ref || github.sha }}
+    steps:
+      - name: Check ref
+        run: |
+          set -euo pipefail
+          if [[ ! "$REF" =~ ^[A-Za-z0-9._/-]+$ || "$REF" == refs/pull/* || "$REF" == pull/* ]]; then
+            echo "e2e: refusing ref" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.REF }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Only commits on this repository's branches: a fork's commits are
+      # reachable here by SHA too.
+      - name: Report pending
+        id: sha
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          if [[ -z "$(git branch --remotes --contains "$sha")" ]]; then
+            echo "e2e: $sha is on no branch of this repository" >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$sha" -f state=pending -f context=e2e \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
+
+  e2e:
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    # One run at a time: runs share the test accounts and their tokens.
+    # GitHub keeps one waiting run and cancels older waiting ones; the
+    # report job marks those as error.
+    concurrency:
+      group: e2e-test-accounts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+
+      # The log is public: mask the test accounts' emails before anything
+      # can print them. Secrets are masked by GitHub already.
+      - name: Mask test accounts
+        env:
+          PIMVAULT_E2E_SERVICE_ACCOUNT: ${{ secrets.PIMVAULT_E2E_SERVICE_ACCOUNT }}
+        run: go run ./script/live/tokens -mask
+
+      - name: End-to-end test
+        env:
+          PIMVAULT_E2E_SERVICE_ACCOUNT: ${{ secrets.PIMVAULT_E2E_SERVICE_ACCOUNT }}
+        run: go test -tags e2e -timeout 40m ./internal/e2e/
+
+  report:
+    needs: [resolve, e2e]
+    if: always() && needs.resolve.outputs.sha != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Report result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          RESULT: ${{ needs.e2e.result }}
+        run: |
+          set -euo pipefail
+          case "$RESULT" in
+            success) state=success ;;
+            failure) state=failure ;;
+            *) state=error ;;
+          esac
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" -f state="$state" -f context=e2e \
+            -f description="e2e $RESULT" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null

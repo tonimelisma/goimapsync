@@ -1,0 +1,19 @@
+# Built binary
+/pimvault
+
+# Test binaries and coverage output
+*.test
+*.out
+
+# Test account settings and credentials (never committed)
+.env
+.testdata/
+
+# Claude Code local settings (shared settings in .claude/ are committed)
+.claude/settings.local.json
+
+# macOS
+.DS_Store
+
+# Release builds (script/release.sh)
+/dist/

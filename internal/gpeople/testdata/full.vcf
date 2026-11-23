@@ -1,0 +1,26 @@
+BEGIN:VCARD
+VERSION:4.0
+ADR;TYPE=home:;;Main St 1\nFloor 2;Helsinki;;00100;Finland
+ANNIVERSARY:20100601
+BDAY:--0517
+CATEGORIES:Family\, close
+CATEGORIES:Work
+EMAIL;PREF=1;TYPE=work:ann@work.example
+EMAIL;TYPE=home:ann@home.example
+FN:Dr. Ann B; Smith
+GENDER:F
+IMPP:xmpp:ann@xmpp.example
+N:Smith;Ann;B\;C;Dr.;
+NICKNAME:Annie
+NOTE:Met at a conference.\nLikes tea.
+ORG:Acme\, Inc.;R&D
+PHOTO:data:image/jpeg;base64,anBlZy1ieXRlcw==
+PRODID:-//pimvault//pimvault//EN
+RELATED;TYPE=spouse;VALUE=text:Bob
+REV:20260203T040506Z
+TEL;TYPE=cell:+358 40 123
+TEL;TYPE=work;TYPE=fax:+358 9 555
+TITLE:Engineer
+UID:people/c123
+URL:https://ann.example
+END:VCARD
