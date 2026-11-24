@@ -5,7 +5,7 @@ name: E2E
 # server: on every push to main, on pull requests from this repository's own
 # branches (never forks, never pull_request_target), weekly, and when a
 # cloud session dispatches it again for a branch:
-#   gh api repos/tonimelisma/goimapsync/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'
+#   gh api repos/tonimelisma/pimvault/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'
 # The result is the "e2e" commit status of the tested commit: pending, then
 # success, failure, or error when the run was cancelled (dispatch again).
 #

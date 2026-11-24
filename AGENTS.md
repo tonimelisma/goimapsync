@@ -88,7 +88,7 @@ Standard Go practice and anything golangci-lint enforces are not repeated here.
   repo knows nothing of who installs it. Cloud sessions never tag or release
   by hand. A rerun for a tagged commit only finishes that release; a manual
   `workflow_dispatch` on `main` (optional version) is the fallback. Read the
-  outcome with `gh api repos/tonimelisma/goimapsync/releases/latest`.
+  outcome with `gh api repos/tonimelisma/pimvault/releases/latest`.
 
 ## Cloud sessions
 
@@ -120,20 +120,21 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   forks), weekly, and on dispatch. A branch gets e2e by opening its PR; each
   push to the PR runs it again. Dependabot's PRs get no Google token, so
   they skip it; dispatch it for their branch. To rerun it for a branch, e.g.
-  after an `error`: `gh api repos/tonimelisma/goimapsync/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'`.
+  after an `error`: `gh api repos/tonimelisma/pimvault/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'`.
   The result is the `e2e` commit status of the branch's head, the merge
   check for code changes:
-  `gh api repos/tonimelisma/goimapsync/commits/SHA/status --jq '.statuses[]|select(.context=="e2e")|.state'`
+  `gh api repos/tonimelisma/pimvault/commits/SHA/status --jq '.statuses[]|select(.context=="e2e")|.state'`
   (pending, then success or failure; its `target_url` is the run). One run
   at a time uses the test accounts; GitHub keeps only the newest waiting
   run, and a dropped one ends as `error`: dispatch again. Only commits on
   this repository's branches are tested. Logs:
-  `gh api repos/tonimelisma/goimapsync/actions/runs/RUN/jobs`, then
+  `gh api repos/tonimelisma/pimvault/actions/runs/RUN/jobs`, then
   `.../actions/jobs/JOB/logs`. The log is public; the workflow masks the
   test accounts' emails and stored tokens (`script/live/tokens -mask`), and
   nothing else it prints may name an account or a token. Google
   credentials are keyless: Workload Identity Federation (pool `github`,
-  provider `goimapsync`, restricted to this repository) gives the run a
+  provider `goimapsync`, restricted to this repository's and owner's IDs)
+  gives the run a
   one-hour token for the `pimvault-e2e` service account. The weekly run
   re-enables its own workflow so GitHub does not disable the schedule, and
   keeps one issue labelled `e2e-failure` open while it fails; it closes it
@@ -181,7 +182,7 @@ One-time steps only the owner can do; agents never handle secret values.
 
 - Before coding, write a short task brief: outcome, non-goals, how it will be
   verified, and a data-safety note for anything that can touch a live account.
-- Changes reach `main` through PRs (`gh api repos/tonimelisma/goimapsync/pulls`).
+- Changes reach `main` through PRs (`gh api repos/tonimelisma/pimvault/pulls`).
   CI (`ci.yml`, `script/check.sh`) is a required gate: squash-merge your own
   PR (`gh api -X PUT .../pulls/N/merge -f merge_method=squash`) without
   asking once `script/check.sh` is green on its final tree here, CI is green
