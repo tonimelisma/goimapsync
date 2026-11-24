@@ -80,7 +80,8 @@ Standard Go practice and anything golangci-lint enforces are not repeated here.
 - Go 1.27 comes from the go line in `go.mod`.
 - Releases (D187, D194, D198): every merge to `main` publishes one by
   itself. When the CI run of a push to `main` succeeds, `release.yml` (run
-  on `main` only) checks the tested commit, tags it with the next patch
+  on `main` only) checks the tested commit if it is still `main`'s head
+  (else the newer commit's run releases both), tags it with the next patch
   version (above every tag and v0.1.2, D196), runs `script/release.sh` and
   uploads the binaries, `SHA256SUMS` and a signed build provenance
   attestation (D197). Builds are reproducible and never use a cache; the
@@ -93,9 +94,9 @@ Standard Go practice and anything golangci-lint enforces are not repeated here.
 
 All work happens in Claude Code cloud sessions; nothing in this repo needs
 another machine. The session's GitHub proxy cannot push tags, create releases or
-reach IMAP, so those run in GitHub Actions, started by a push to `main` or a
-`repository_dispatch` (`gh api` REST works; GraphQL, so `gh pr create`,
-does not).
+reach IMAP, so those run in GitHub Actions: releases after a successful CI
+run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
+(`gh api` REST works; GraphQL, so `gh pr create`, does not).
 
 - `.claude/hooks/session-start.sh` runs at session start and does nothing
   unless `CLAUDE_CODE_REMOTE=true`. It installs gcc, curl and git if missing

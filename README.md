@@ -26,7 +26,8 @@ install -D -m 0755 pimvault-v1.2.3-linux-amd64 ~/.local/bin/pimvault
 pimvault --version
 ```
 
-Every merge to `main` is released as the next patch version. Each release
+Each merge to `main` whose checks pass is released as the next patch version
+(merges in quick succession may share one). Each release
 is built by the repository's release workflow on `main` from its tag
 alone: no cache, no secret beyond GitHub's own token. It is signed with
 GitHub's build provenance attestations (Sigstore, no long-lived key). To

@@ -1,13 +1,16 @@
 name: Release
 
 # Publishes a release after every merge to main (D198): when the CI run of a
-# push to main succeeds, it checks the tested commit, tags it with the next
-# patch version, builds it with script/release.sh and uploads the binaries,
+# push to main succeeds and its commit is still main's head, it checks that
+# commit, tags it with the next patch version, builds it with script/release.sh and uploads the binaries,
 # SHA256SUMS and a signed build provenance attestation (D197). The build is
 # reproducible and uses no cache, and the job holds no secret beyond
 # GITHUB_TOKEN. Only this workflow, run on main, publishes or attests
 # releases; consumers verify with --signer-workflow and --source-ref
-# refs/heads/main. Nothing runs on tag pushes.
+# refs/heads/main. Nothing runs on tag pushes. A run for a commit main has
+# moved past releases nothing: the newer commit's run releases it, so one
+# release can hold several merges, and the attestation's source commit
+# (GITHUB_SHA) is always the commit built.
 #
 # A manual run (workflow_dispatch on main only) releases main's head, as the
 # given version or the next patch version. A version must be higher than
@@ -43,20 +46,24 @@ jobs:
   release:
     # Only a successful CI run of a push to this repository's main.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.head_repository.full_name == github.repository)
+      github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       INPUT_VERSION: ${{ inputs.version }}
       NOTES: ${{ inputs.notes }}
+      # The tested commit; empty for a manual run.
       SHA: ${{ github.event.workflow_run.head_sha }}
       GH_TOKEN: ${{ github.token }}
     steps:
       # The attestation names this ref; consumers accept only main.
+      # A branch's copy of this file can drop it; consumers' --source-ref
+      # refs/heads/main is what holds there.
       - name: Require main
         run: |
           if [[ "$GITHUB_REF" != refs/heads/main ]]; then
@@ -66,23 +73,29 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
-      # Picks the commit (the tested one, or main's head for a manual run)
-      # and its version, or the existing release to finish.
+      # Picks the version for main's head (the tested commit), or the
+      # existing release to finish.
       - name: Choose commit
         id: plan
         run: |
           set -euo pipefail
-          sha=${SHA:-$(git rev-parse HEAD)}
-          if ! git merge-base --is-ancestor "$sha" HEAD; then
+          sha=$GITHUB_SHA
+          if [[ -n "$SHA" && "$SHA" != "$sha" ]]; then
+            echo "release: main moved on from $SHA to $sha; that commit's run releases both"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! git merge-base --is-ancestor "$sha" origin/main; then
             echo "release: $sha is not on main" >&2
             exit 1
           fi
           tags=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
           # v0.1.2 was released before the repository restarted (D196).
           highest=$({ echo v0.1.2; printf '%s\n' "$tags"; } | sed '/^$/d' | sort -V | tail -n 1)
+          existing=$(git tag --points-at "$sha" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
           version=$INPUT_VERSION
           if [[ -n "$version" ]]; then
             if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -95,22 +108,17 @@ jobs:
               echo "new=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
+            if [[ -n "$existing" ]]; then
+              echo "release: $sha is already released as $existing" >&2
+              exit 1
+            fi
           else
-            existing=$(git tag --points-at "$sha" --list 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n 1)
             if [[ -n "$existing" ]]; then
               echo "release: $sha is tagged $existing; finishing its release"
               echo "VERSION=$existing" >> "$GITHUB_ENV"
               echo "new=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            # A late run for a commit older than a released one releases nothing.
-            for tag in $tags; do
-              if git merge-base --is-ancestor "$sha" "refs/tags/$tag"; then
-                echo "release: $tag already contains $sha; nothing to release"
-                echo "skip=true" >> "$GITHUB_OUTPUT"
-                exit 0
-              fi
-            done
             IFS=. read -r major minor patch <<<"${highest#v}"
             version="v$major.$minor.$((patch + 1))"
           fi
@@ -119,7 +127,6 @@ jobs:
             exit 1
           fi
           echo "release: $version of $sha"
-          git checkout --quiet --detach "$sha"
           echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "new=true" >> "$GITHUB_OUTPUT"
 
