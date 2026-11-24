@@ -57,3 +57,55 @@ func TestSecrets_AccessAndAdd(t *testing.T) {
 	assert.Equal(t, "imap-rt", got.IMAP.RefreshToken)
 	assert.Equal(t, "rt", got.Token.RefreshToken)
 }
+
+func TestFromEnv_AccessToken(t *testing.T) {
+	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "wif-token")
+	t.Setenv("PIMVAULT_E2E_PROJECT", "p")
+	t.Setenv("PIMVAULT_E2E_SERVICE_ACCOUNT", "not json: the access token wins")
+
+	var auth string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Authorization")
+		_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck // test server.
+			"payload": map[string]string{"data": base64.StdEncoding.EncodeToString([]byte(`{"account":"gmail:a@example.com"}`))},
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	secrets, err := e2e.FromEnv(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "p", secrets.Project)
+
+	secrets.BaseURL = srv.URL
+
+	s, err := secrets.Access(t.Context(), "s")
+	require.NoError(t, err)
+	assert.Equal(t, "gmail:a@example.com", s.Account)
+	assert.Equal(t, "Bearer wif-token", auth)
+}
+
+func TestFromEnv_AccessTokenNeedsProject(t *testing.T) {
+	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "wif-token")
+	t.Setenv("PIMVAULT_E2E_PROJECT", "")
+
+	_, err := e2e.FromEnv(t.Context())
+	require.ErrorContains(t, err, "PIMVAULT_E2E_PROJECT")
+}
+
+func TestFromEnv_ServiceAccountKey(t *testing.T) {
+	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "")
+	t.Setenv("PIMVAULT_E2E_SERVICE_ACCOUNT", `{"client_email":"sa@p.iam.gserviceaccount.com","token_uri":"https://oauth2.googleapis.com/token","project_id":"p"}`)
+
+	secrets, err := e2e.FromEnv(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "p", secrets.Project)
+}
+
+func TestFromEnv_None(t *testing.T) {
+	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "")
+	t.Setenv("PIMVAULT_E2E_SERVICE_ACCOUNT", "")
+
+	_, err := e2e.FromEnv(t.Context())
+	require.ErrorIs(t, err, e2e.ErrNoCredentials)
+}

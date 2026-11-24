@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/jwt"
@@ -34,6 +35,39 @@ type Secrets struct {
 	HTTP    *http.Client
 	BaseURL string
 	Project string
+}
+
+// ErrNoCredentials means the environment names no Secret Manager credentials.
+var ErrNoCredentials = errors.New("set PIMVAULT_E2E_ACCESS_TOKEN and PIMVAULT_E2E_PROJECT, or PIMVAULT_E2E_SERVICE_ACCOUNT")
+
+// FromEnv returns the Secret Manager secrets the environment's credentials
+// reach (D199): in GitHub Actions a short-lived access token for the
+// service account from Workload Identity Federation, in
+// PIMVAULT_E2E_ACCESS_TOKEN with the project in PIMVAULT_E2E_PROJECT; in a
+// cloud session the service account key in PIMVAULT_E2E_SERVICE_ACCOUNT.
+func FromEnv(ctx context.Context) (*Secrets, error) {
+	if token := os.Getenv("PIMVAULT_E2E_ACCESS_TOKEN"); token != "" {
+		project := os.Getenv("PIMVAULT_E2E_PROJECT")
+		if project == "" {
+			return nil, errors.New("read access token: PIMVAULT_E2E_PROJECT is not set")
+		}
+
+		return AccessToken(ctx, token, project), nil
+	}
+
+	if key := os.Getenv("PIMVAULT_E2E_SERVICE_ACCOUNT"); key != "" {
+		return ServiceAccount(ctx, []byte(key))
+	}
+
+	return nil, ErrNoCredentials
+}
+
+// AccessToken returns the Secret Manager secrets of a project, reached with
+// an access token. The token is not refreshed.
+func AccessToken(ctx context.Context, token, project string) *Secrets {
+	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
+
+	return &Secrets{HTTP: oauth2.NewClient(ctx, src), BaseURL: SecretManagerURL, Project: project}
 }
 
 // ServiceAccount returns the Secret Manager secrets of the service account

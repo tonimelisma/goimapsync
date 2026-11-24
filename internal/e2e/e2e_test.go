@@ -5,9 +5,7 @@ package e2e_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"os"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -21,64 +19,21 @@ import (
 )
 
 // The test accounts' secrets (script/live/e2elogin).
-var secretNames = []string{"e2e-gmail-token", "e2e-outlook-token"}
+var secretNames = []string{"e2e-gmail-token", "e2e-outlook-token"} //nolint:gochecknoglobals // a fixed list.
 
-// secretStore is where the test tokens live: Secret Manager (D158), or for
-// a local run a directory of <secret>.json files.
-type secretStore interface {
-	Access(ctx context.Context, name string) (*e2e.Secret, error)
-	Add(ctx context.Context, name string, s *e2e.Secret) error
-}
-
-type dirStore string
-
-func (d dirStore) Access(_ context.Context, name string) (*e2e.Secret, error) {
-	data, err := os.ReadFile(filepath.Join(string(d), name+".json"))
-	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", name, err)
-	}
-
-	var s e2e.Secret
-	if err := json.Unmarshal(data, &s); err != nil {
-		return nil, fmt.Errorf("read %s: %w", name, err)
-	}
-
-	return &s, nil
-}
-
-func (d dirStore) Add(_ context.Context, name string, s *e2e.Secret) error {
-	data, err := json.Marshal(s)
-	if err != nil {
-		return fmt.Errorf("encode %s: %w", name, err)
-	}
-
-	if err := os.WriteFile(filepath.Join(string(d), name+".json"), data, 0o600); err != nil {
-		return fmt.Errorf("write %s: %w", name, err)
-	}
-
-	return nil
-}
-
-// store returns the secret store the environment names:
-// PIMVAULT_E2E_SERVICE_ACCOUNT holds a service account key for Secret
-// Manager; PIMVAULT_E2E_TOKENS names a local directory.
-func store(t *testing.T) secretStore {
+// store returns the Secret Manager secrets (D158) the environment's
+// credentials reach (e2e.FromEnv).
+func store(t *testing.T) *e2e.Secrets {
 	t.Helper()
 
-	if key := os.Getenv("PIMVAULT_E2E_SERVICE_ACCOUNT"); key != "" {
-		secrets, err := e2e.ServiceAccount(t.Context(), []byte(key))
-		require.NoError(t, err)
-
-		return secrets
+	secrets, err := e2e.FromEnv(t.Context())
+	if errors.Is(err, e2e.ErrNoCredentials) {
+		t.Skip(err.Error())
 	}
 
-	if dir := os.Getenv("PIMVAULT_E2E_TOKENS"); dir != "" {
-		return dirStore(dir)
-	}
+	require.NoError(t, err)
 
-	t.Skip("set PIMVAULT_E2E_SERVICE_ACCOUNT or PIMVAULT_E2E_TOKENS")
-
-	return nil
+	return secrets
 }
 
 type harness struct {
@@ -89,7 +44,7 @@ type harness struct {
 
 // signIn puts the test accounts' tokens into a fresh config directory and
 // stores tokens the run refreshed back when the test ends.
-func signIn(t *testing.T, secrets secretStore) *harness {
+func signIn(t *testing.T, secrets *e2e.Secrets) *harness {
 	t.Helper()
 
 	h := &harness{home: t.TempDir()}

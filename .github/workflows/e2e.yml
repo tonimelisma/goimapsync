@@ -1,14 +1,27 @@
 name: E2E
 
-# End-to-end test against the throwaway test accounts (D193). Never on
-# pull_request or pull_request_target: a fork must never get the secret.
-# Cloud sessions start it for a branch with
+# End-to-end test against the throwaway test accounts (D193, D199). It runs
+# only here in GitHub Actions, never on a developer machine or the owner's
+# server: on every push to main, on pull requests from this repository's own
+# branches (never forks, never pull_request_target), weekly, and when a
+# cloud session dispatches it again for a branch:
 #   gh api repos/tonimelisma/goimapsync/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'
-# and read the "e2e" commit status of the tested commit: pending, then
+# The result is the "e2e" commit status of the tested commit: pending, then
 # success, failure, or error when the run was cancelled (dispatch again).
+#
+# Google credentials are keyless: Workload Identity Federation lets this
+# repository's workflows act as the e2e service account, which reads and
+# adds versions of the test token secrets. A pull request runs its own copy
+# of this file with those credentials; only people with write access can
+# push branches here.
 on:
   push:
     branches: [main]
+  pull_request:
+  # Weekly, Tuesdays 04:23 UTC: keeps the Outlook token in use and reports
+  # failures in an issue labelled e2e-failure.
+  schedule:
+    - cron: "23 4 * * 2"
   repository_dispatch:
     types: [e2e]
   workflow_dispatch:
@@ -16,22 +29,40 @@ on:
       ref:
         description: Branch or commit to test
         required: false
+      scheduled:
+        description: Take the weekly run's path (issue on failure, keepalive)
+        type: boolean
+        default: false
 
-run-name: e2e ${{ github.event.client_payload.ref || inputs.ref || github.ref_name }}
+run-name: e2e ${{ github.event.pull_request.head.ref || github.event.client_payload.ref || inputs.ref || github.ref_name }}
 
 permissions:
   contents: read
-  statuses: write
+
+env:
+  # Workload Identity provider and the service account it may impersonate.
+  WIF_PROVIDER: projects/486829218720/locations/global/workloadIdentityPools/github/providers/goimapsync
+  SERVICE_ACCOUNT: pimvault-e2e@pimvault-28120.iam.gserviceaccount.com
+  PIMVAULT_E2E_PROJECT: pimvault-28120
 
 jobs:
   # Resolves the commit and marks it pending at once, before the queue.
   resolve:
+    # Pull requests from this repository's branches only. Dependabot's runs
+    # get no OIDC token or status write; dispatch e2e for its branches.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      statuses: write
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
     env:
-      REF: ${{ github.event.client_payload.ref || inputs.ref || github.sha }}
+      REF: ${{ github.event.pull_request.head.sha || github.event.client_payload.ref || inputs.ref || github.sha }}
     steps:
       - name: Check ref
         run: |
@@ -68,6 +99,10 @@ jobs:
     needs: resolve
     runs-on: ubuntu-latest
     timeout-minutes: 50
+    permissions:
+      contents: read
+      # Workload Identity Federation: GitHub's OIDC token for this run.
+      id-token: write
     # One run at a time: runs share the test accounts and their tokens.
     # GitHub keeps one waiting run and cancels older waiting ones; the
     # report job marks those as error.
@@ -84,16 +119,36 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # The log is public: mask the test accounts' emails before anything
-      # can print them. Secrets are masked by GitHub already.
+      # Built first, so the token's hour is left for the test.
+      - name: Build
+        run: |
+          set -euo pipefail
+          go build -o /dev/null ./script/live/tokens
+          go test -tags e2e -count=1 -run '^$' ./internal/e2e/
+
+      # A one-hour access token for the service account, masked in the log;
+      # no key and no credentials file.
+      - name: Google credentials
+        id: google
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_lifetime: 3600s
+          create_credentials_file: false
+          export_environment_variables: false
+
+      # The log is public: mask the test accounts' emails and tokens before
+      # anything can print them.
       - name: Mask test accounts
         env:
-          PIMVAULT_E2E_SERVICE_ACCOUNT: ${{ secrets.PIMVAULT_E2E_SERVICE_ACCOUNT }}
+          PIMVAULT_E2E_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
         run: go run ./script/live/tokens -mask
 
       - name: End-to-end test
         env:
-          PIMVAULT_E2E_SERVICE_ACCOUNT: ${{ secrets.PIMVAULT_E2E_SERVICE_ACCOUNT }}
+          PIMVAULT_E2E_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
         run: go test -tags e2e -timeout 40m ./internal/e2e/
 
   report:
@@ -101,6 +156,8 @@ jobs:
     if: always() && needs.resolve.outputs.sha != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      statuses: write
     steps:
       - name: Report result
         env:
@@ -117,3 +174,63 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" -f state="$state" -f context=e2e \
             -f description="e2e $RESULT" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
+
+  # The weekly run: keeps its schedule alive and keeps one issue open while
+  # it fails. It prints nothing about the test accounts.
+  weekly:
+    needs: [resolve, e2e]
+    if: always() && (github.event_name == 'schedule' || inputs.scheduled)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # Re-enabling this workflow.
+      actions: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RESOLVED: ${{ needs.resolve.result }}
+      RESULT: ${{ needs.e2e.result }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      # GitHub disables a public repository's schedules after 60 days
+      # without activity; enabling the workflow again counts, without a
+      # commit.
+      - name: Keep the schedule alive
+        run: gh api -X PUT "repos/$GITHUB_REPOSITORY/actions/workflows/e2e.yml/enable"
+
+      - name: Report in an issue
+        run: |
+          set -euo pipefail
+          repo=$GITHUB_REPOSITORY
+          label=e2e-failure
+          gh api "repos/$repo/labels" -f name="$label" -f color=d73a4a \
+            -f description="The weekly end-to-end run failed" >/dev/null 2>&1 || true
+          issue=$(gh api "repos/$repo/issues?state=open&labels=$label&per_page=1" --jq '.[0].number // empty')
+          if [[ "$RESOLVED" == failure ]]; then
+            RESULT=failure
+          fi
+          # A run cancelled in the queue says nothing either way.
+          if [[ "$RESULT" != success && "$RESULT" != failure ]]; then
+            echo "e2e: the run ended with $RESULT; no issue change"
+            exit 0
+          fi
+          if [[ "$RESULT" == success ]]; then
+            if [[ -n "$issue" ]]; then
+              gh api "repos/$repo/issues/$issue/comments" -f body="The weekly end-to-end run passed: $RUN_URL" >/dev/null
+              gh api -X PATCH "repos/$repo/issues/$issue" -f state=closed -f state_reason=completed >/dev/null
+              echo "e2e: closed #$issue"
+            fi
+            exit 0
+          fi
+          text="The weekly end-to-end run failed: $RUN_URL"
+          if [[ -n "$issue" ]]; then
+            gh api "repos/$repo/issues/$issue/comments" -f body="$text" >/dev/null
+            echo "e2e: commented on #$issue"
+            exit 0
+          fi
+          body="$text
+
+          Read the run's log, fix the cause and merge the fix; the next weekly run closes this issue when it passes. If a test account's sign-in expired, do the weekly test sign-in (AGENTS.md).
+
+          If the weekly run stops appearing in the Actions tab, GitHub may have disabled its schedule for inactivity. Enable the E2E workflow again there: without the weekly run, the Outlook test token expires through disuse and needs a new sign-in."
+          gh api "repos/$repo/issues" -f title="Weekly end-to-end run failed" -f body="$body" -f "labels[]=$label" --jq '"e2e: opened #\(.number)"'

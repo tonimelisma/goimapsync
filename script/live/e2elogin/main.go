@@ -1,6 +1,6 @@
 // Command e2elogin signs a test account in and stores its tokens in Secret
 // Manager (D158, D159), with the service account key in
-// PIMVAULT_E2E_SERVICE_ACCOUNT:
+// PIMVAULT_E2E_SERVICE_ACCOUNT, which cloud sessions keep for this (D199):
 //
 //	go run ./script/live/e2elogin [-in FILE] [-account EMAIL] gmail|outlook
 //
@@ -59,12 +59,7 @@ func run(ctx context.Context, in, want string, args []string) error {
 		return fmt.Errorf("parse provider: %w", err)
 	}
 
-	key := os.Getenv("PIMVAULT_E2E_SERVICE_ACCOUNT")
-	if key == "" {
-		return errors.New("PIMVAULT_E2E_SERVICE_ACCOUNT is not set")
-	}
-
-	store, err := e2e.ServiceAccount(ctx, []byte(key))
+	store, err := e2e.FromEnv(ctx)
 	if err != nil {
 		return err
 	}
