@@ -17,8 +17,7 @@ permissions:
 
 jobs:
   # Same entry point as local work: format, lint, build, vet, race tests.
-  # The end-to-end test has its own workflow, which pull requests never run
-  # (e2e.yml, D193).
+  # The end-to-end test has its own workflow (e2e.yml, D199).
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 30

@@ -1,6 +1,7 @@
 // Command tokens signs pimvault in as the throwaway test accounts for live
 // probes: it reads their tokens from Secret Manager (D158), with the
-// service account key in PIMVAULT_E2E_SERVICE_ACCOUNT, into a fresh
+// credentials e2e.FromEnv reads (the service account key in a cloud session,
+// a Workload Identity access token in GitHub Actions), into a fresh
 // XDG_CONFIG_HOME, and prints the account IDs, never the tokens.
 //
 //	go run ./script/live/tokens -out DIR
@@ -50,12 +51,7 @@ func run(ctx context.Context, out string, mask bool) error {
 		return fmt.Errorf("usage: tokens -out DIR | tokens -mask")
 	}
 
-	key := os.Getenv("PIMVAULT_E2E_SERVICE_ACCOUNT")
-	if key == "" {
-		return fmt.Errorf("PIMVAULT_E2E_SERVICE_ACCOUNT is not set")
-	}
-
-	store, err := e2e.ServiceAccount(ctx, []byte(key))
+	store, err := e2e.FromEnv(ctx)
 	if err != nil {
 		return err
 	}

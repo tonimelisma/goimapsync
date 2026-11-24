@@ -113,11 +113,16 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   `go build -o /tmp/pimvault ./cmd/pimvault` and run it with
   `XDG_CONFIG_HOME=DIR`. IMAP (port 993) is refused here; anything needing it
   runs through the end-to-end workflow.
-- End-to-end test (D193): `.github/workflows/e2e.yml` runs
-  `go test -tags e2e -timeout 40m ./internal/e2e/` on every push to `main`
-  and on dispatch, never for pull requests. Push the branch, then
-  `gh api repos/tonimelisma/goimapsync/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'`.
-  The result is the `e2e` commit status of the branch's head:
+- End-to-end test (D193, D199): `.github/workflows/e2e.yml` runs
+  `go test -tags e2e -timeout 40m ./internal/e2e/` only in GitHub Actions,
+  never on a developer machine or the owner's server. It runs on every push
+  to `main`, on every pull request from a branch of this repository (never
+  forks), weekly, and on dispatch. A branch gets e2e by opening its PR; each
+  push to the PR runs it again. Dependabot's PRs get no Google token, so
+  they skip it; dispatch it for their branch. To rerun it for a branch, e.g.
+  after an `error`: `gh api repos/tonimelisma/goimapsync/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'`.
+  The result is the `e2e` commit status of the branch's head, the merge
+  check for code changes:
   `gh api repos/tonimelisma/goimapsync/commits/SHA/status --jq '.statuses[]|select(.context=="e2e")|.state'`
   (pending, then success or failure; its `target_url` is the run). One run
   at a time uses the test accounts; GitHub keeps only the newest waiting
@@ -126,7 +131,14 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   `gh api repos/tonimelisma/goimapsync/actions/runs/RUN/jobs`, then
   `.../actions/jobs/JOB/logs`. The log is public; the workflow masks the
   test accounts' emails and stored tokens (`script/live/tokens -mask`), and
-  nothing else it prints may name an account or a token.
+  nothing else it prints may name an account or a token. Google
+  credentials are keyless: Workload Identity Federation (pool `github`,
+  provider `goimapsync`, restricted to this repository) gives the run a
+  one-hour token for the `pimvault-e2e` service account. The weekly run
+  re-enables its own workflow so GitHub does not disable the schedule, and
+  keeps one issue labelled `e2e-failure` open while it fails; it closes it
+  when it passes. Dispatch the workflow with `scheduled` set to test that
+  path.
 - Weekly test sign-in (D159, D195), for `gmail` (and `outlook` when its
   sign-in fails):
   1. `go run ./script/live/e2elogin -in /tmp/e2e-redirect gmail >/tmp/e2e-login.log 2>&1 &`
@@ -154,11 +166,14 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
 
 One-time steps only the owner can do; agents never handle secret values.
 
-- Repository Actions secret `PIMVAULT_E2E_SERVICE_ACCOUNT`: the service
-  account key `script/live/google-setup.sh` prints (Google Cloud Shell).
-- The same key as the cloud session's environment variable
-  `PIMVAULT_E2E_SERVICE_ACCOUNT` (the code reads the key itself, so it
-  cannot be a proxy-injected secret), and the network hosts above.
+- `script/live/google-setup.sh` (Google Cloud Shell): the Secret Manager
+  secrets, the `pimvault-e2e` service account, the Workload Identity pool
+  the e2e workflow signs in with, and a service account key.
+- That key only as the "goimapsync" cloud environment's variable
+  `PIMVAULT_E2E_SERVICE_ACCOUNT`, for the weekly sign-in (`e2elogin`) and
+  live probes; Workload Identity works only inside Actions, so the key
+  stays. The code reads the key itself, so it cannot be a proxy-injected
+  secret. Plus the network hosts above. GitHub holds no Google secret.
 - The weekly sign-in: open the URL the agent gives you in a private tab,
   sign in as the test account, paste back the failed address.
 
@@ -175,8 +190,8 @@ One-time steps only the owner can do; agents never handle secret values.
   build/test cycle. Merged branches are deleted automatically.
 - Tests: unit tests with testify, fakes at I/O seams, failure injection and
   golden files. End-to-end tests against the real test accounts run in the
-  e2e workflow before each PR that changes code merges (D179, D193); tokens
-  come from Secret Manager through `PIMVAULT_E2E_SERVICE_ACCOUNT` (D158).
+  e2e workflow before each PR that changes code merges (D179, D193, D199);
+  tokens come from Secret Manager (D158).
   Test account names and credentials are never committed (`.env`,
   `.testdata/`), and account emails are redacted in shown output and masked
   in workflow logs.
