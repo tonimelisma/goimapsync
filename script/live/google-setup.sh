@@ -37,9 +37,10 @@ for secret in e2e-gmail-token e2e-outlook-token; do
 done
 
 # Keyless credentials for GitHub Actions, only for this repository's workflows.
-# The IDs pin the repository and its owner, so a later repository reusing the
-# name gets nothing.
-repo=tonimelisma/goimapsync
+# Trust is by repository and owner ID, which survive a rename (D200), so a
+# later repository reusing a name gets nothing. The provider ID goimapsync is
+# the repository's earlier name.
+repo=tonimelisma/pimvault
 repo_id=1468242798
 owner_id=59022391
 if ! gcloud iam workload-identity-pools describe github --location=global >/dev/null 2>&1; then
@@ -51,12 +52,12 @@ if ! gcloud iam workload-identity-pools providers describe goimapsync --location
     --location=global --workload-identity-pool=github \
     --display-name="${repo}" \
     --issuer-uri="https://token.actions.githubusercontent.com" \
-    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-    --attribute-condition="assertion.repository == '${repo}' && assertion.repository_id == '${repo_id}' && assertion.repository_owner_id == '${owner_id}'"
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_id=assertion.repository_id" \
+    --attribute-condition="assertion.repository_id == '${repo_id}' && assertion.repository_owner_id == '${owner_id}'"
 fi
 number=$(gcloud projects describe "${project}" --format='value(projectNumber)')
 gcloud iam service-accounts add-iam-policy-binding "${account}" --role=roles/iam.workloadIdentityUser \
-  --member="principalSet://iam.googleapis.com/projects/${number}/locations/global/workloadIdentityPools/github/attribute.repository/${repo}" \
+  --member="principalSet://iam.googleapis.com/projects/${number}/locations/global/workloadIdentityPools/github/attribute.repository_id/${repo_id}" \
   >/dev/null
 
 echo

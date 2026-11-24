@@ -17,7 +17,7 @@ server.
 
 Download the binary for your machine (`linux-amd64` or `linux-arm64`) and
 `SHA256SUMS` from the
-[releases page](https://github.com/tonimelisma/goimapsync/releases), then
+[releases page](https://github.com/tonimelisma/pimvault/releases), then
 check and install it (here version v1.2.3 for amd64):
 
 ```sh
@@ -34,8 +34,8 @@ GitHub's build provenance attestations (Sigstore, no long-lived key). To
 check that a binary was built by that workflow from this repository:
 
 ```sh
-gh attestation verify pimvault-v1.2.3-linux-amd64 --repo tonimelisma/goimapsync \
-  --signer-workflow tonimelisma/goimapsync/.github/workflows/release.yml \
+gh attestation verify pimvault-v1.2.3-linux-amd64 --repo tonimelisma/pimvault \
+  --signer-workflow tonimelisma/pimvault/.github/workflows/release.yml \
   --source-ref refs/heads/main
 ```
 
@@ -48,7 +48,7 @@ produces byte-identical binaries and `SHA256SUMS` (it uses the exact Go
 version in `go.mod`).
 
 To update automatically, poll
-`https://api.github.com/repos/tonimelisma/goimapsync/releases/latest`: its
+`https://api.github.com/repos/tonimelisma/pimvault/releases/latest`: its
 `tag_name` is the newest version and `assets` lists the files above. Install
 a new version only after it verifies, and only if it is newer than the one
 you run.
