@@ -41,7 +41,7 @@ permissions:
 
 env:
   # Workload Identity provider and the service account it may impersonate.
-  WIF_PROVIDER: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/goimapsync
+  WIF_PROVIDER: projects/486829218720/locations/global/workloadIdentityPools/github/providers/goimapsync
   SERVICE_ACCOUNT: pimvault-e2e@pimvault-28120.iam.gserviceaccount.com
   PIMVAULT_E2E_PROJECT: pimvault-28120
 
