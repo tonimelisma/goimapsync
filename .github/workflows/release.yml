@@ -1,28 +1,36 @@
 name: Release
 
-# Publishes a release of main's head (D187, D194): checks it, tags it,
-# builds it with script/release.sh and uploads the binaries, SHA256SUMS and a
-# signed build provenance attestation (D197). The build is reproducible and
-# uses no cache, and the job holds no secret beyond GITHUB_TOKEN.
-# Cloud sessions start it with
-#   gh api repos/tonimelisma/goimapsync/dispatches -f event_type=release \
-#     -f 'client_payload[version]=vX.Y.Z' -f 'client_payload[notes]=NOTES'
-# Without notes, GitHub writes them from the merged pull requests.
-# A new version must be higher than every existing tag. Running it again for
-# an existing tag only finishes that release; it never moves the tag.
+# Publishes a release after every merge to main (D198): when the CI run of a
+# push to main succeeds and its commit is still main's head, it checks that
+# commit, tags it with the next patch version, builds it with script/release.sh and uploads the binaries,
+# SHA256SUMS and a signed build provenance attestation (D197). The build is
+# reproducible and uses no cache, and the job holds no secret beyond
+# GITHUB_TOKEN. Only this workflow, run on main, publishes or attests
+# releases; consumers verify with --signer-workflow and --source-ref
+# refs/heads/main. Nothing runs on tag pushes. A run for a commit main has
+# moved past releases nothing: the newer commit's run releases it, so one
+# release can hold several merges, and the attestation's source commit
+# (GITHUB_SHA) is always the commit built.
+#
+# A manual run (workflow_dispatch on main only) releases main's head, as the
+# given version or the next patch version. A version must be higher than
+# every existing tag and v0.1.2 (D196). Running it again for a tagged commit
+# or an existing tag only finishes that release; it never moves a tag.
 on:
-  repository_dispatch:
-    types: [release]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       version:
-        description: Version to release, such as v1.2.3
-        required: true
+        description: Version to release, such as v1.2.3 (default the next patch version)
+        required: false
       notes:
-        description: Release notes (Markdown)
+        description: Release notes (Markdown; default generated from the merged pull requests)
         required: false
 
-run-name: release ${{ github.event.client_payload.version || inputs.version }}
+run-name: release ${{ inputs.version || github.event.workflow_run.head_sha || github.sha }}
 
 concurrency:
   group: release
@@ -36,41 +44,95 @@ permissions:
 
 jobs:
   release:
+    # Only a successful CI run of a push to this repository's main.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      VERSION: ${{ github.event.client_payload.version || inputs.version }}
-      NOTES: ${{ github.event.client_payload.notes || inputs.notes }}
+      INPUT_VERSION: ${{ inputs.version }}
+      NOTES: ${{ inputs.notes }}
+      # The tested commit; empty for a manual run.
+      SHA: ${{ github.event.workflow_run.head_sha }}
       GH_TOKEN: ${{ github.token }}
     steps:
+      # The attestation names this ref; consumers accept only main.
+      # A branch's copy of this file can drop it; consumers' --source-ref
+      # refs/heads/main is what holds there.
+      - name: Require main
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+            echo "release: runs only on refs/heads/main, not $GITHUB_REF" >&2
+            exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
+      # Picks the version for main's head (the tested commit), or the
+      # existing release to finish.
       - name: Choose commit
         id: plan
         run: |
           set -euo pipefail
-          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "release: version must look like v1.2.3" >&2
-            exit 1
-          fi
-          if git rev-parse --verify --quiet "refs/tags/$VERSION" >/dev/null; then
-            echo "release: tag $VERSION exists; finishing its release"
-            echo "new=false" >> "$GITHUB_OUTPUT"
+          sha=$GITHUB_SHA
+          if [[ -n "$SHA" && "$SHA" != "$sha" ]]; then
+            echo "release: main moved on from $SHA to $sha; that commit's run releases both"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # v0.1.2 was released before the repository restarted (D196).
-          highest=$({ echo v0.1.2; git tag --list 'v[0-9]*.[0-9]*.[0-9]*'; } | sort -V | tail -n 1)
-          if [[ "$(printf '%s\n%s\n' "$highest" "$VERSION" | sort -V | tail -n 1)" != "$VERSION" || "$VERSION" == "$highest" ]]; then
-            echo "release: $VERSION is not higher than $highest" >&2
+          if ! git merge-base --is-ancestor "$sha" origin/main; then
+            echo "release: $sha is not on main" >&2
             exit 1
           fi
+          tags=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          # v0.1.2 was released before the repository restarted (D196).
+          highest=$({ echo v0.1.2; printf '%s\n' "$tags"; } | sed '/^$/d' | sort -V | tail -n 1)
+          existing=$(git tag --points-at "$sha" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
+          version=$INPUT_VERSION
+          if [[ -n "$version" ]]; then
+            if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "release: version must look like v1.2.3" >&2
+              exit 1
+            fi
+            if git rev-parse --verify --quiet "refs/tags/$version" >/dev/null; then
+              echo "release: tag $version exists; finishing its release"
+              echo "VERSION=$version" >> "$GITHUB_ENV"
+              echo "new=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [[ -n "$existing" ]]; then
+              echo "release: $sha is already released as $existing" >&2
+              exit 1
+            fi
+          else
+            if [[ -n "$existing" ]]; then
+              echo "release: $sha is tagged $existing; finishing its release"
+              echo "VERSION=$existing" >> "$GITHUB_ENV"
+              echo "new=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            IFS=. read -r major minor patch <<<"${highest#v}"
+            version="v$major.$minor.$((patch + 1))"
+          fi
+          if [[ "$(printf '%s\n%s\n' "$highest" "$version" | sort -V | tail -n 1)" != "$version" || "$version" == "$highest" ]]; then
+            echo "release: $version is not higher than $highest" >&2
+            exit 1
+          fi
+          echo "release: $version of $sha"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "new=true" >> "$GITHUB_OUTPUT"
 
       # No cache: a release is built from the tag and the module proxy only.
       - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        if: steps.plan.outputs.skip != 'true'
         with:
           go-version-file: go.mod
           cache: false
@@ -94,12 +156,14 @@ jobs:
           git push origin "refs/tags/$VERSION"
 
       - name: Build
+        if: steps.plan.outputs.skip != 'true'
         run: |
           set -euo pipefail
           git checkout --quiet "refs/tags/$VERSION"
           script/release.sh "$VERSION"
 
       - name: Attest
+        if: steps.plan.outputs.skip != 'true'
         id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -107,6 +171,7 @@ jobs:
 
       # The same attestation as a release asset, for verifying offline.
       - name: Add attestation bundle
+        if: steps.plan.outputs.skip != 'true'
         env:
           BUNDLE: ${{ steps.attest.outputs.bundle-path }}
         run: cp "$BUNDLE" "dist/pimvault-$VERSION.sigstore.json"
@@ -115,6 +180,7 @@ jobs:
       # gets this build's assets, whose SHA256SUMS matches them, and is
       # published.
       - name: Publish
+        if: steps.plan.outputs.skip != 'true'
         run: |
           set -euo pipefail
           api="repos/$GITHUB_REPOSITORY/releases"

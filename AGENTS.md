@@ -78,23 +78,25 @@ Standard Go practice and anything golangci-lint enforces are not repeated here.
 - `script/check.sh` is the single check: tidy, format, lint, build, vet, race
   tests.
 - Go 1.27 comes from the go line in `go.mod`.
-- Releases (D187, D194): GitHub Actions publishes them (`release.yml`).
-  Dispatch it for `main`'s head with
-  `gh api repos/tonimelisma/goimapsync/dispatches -f event_type=release -f 'client_payload[version]=vX.Y.Z' -f 'client_payload[notes]=...'`.
-  It runs `script/check.sh`, tags, runs `script/release.sh` and uploads the
-  binaries, `SHA256SUMS` and a signed build provenance attestation (D197).
-  Builds are reproducible and never use a cache; the repo knows nothing of
-  who installs it. It refuses a version not higher than every
-  tag and v0.1.2 (D196); a rerun for an existing tag only finishes that release. Read the
-  outcome with `gh api repos/tonimelisma/goimapsync/releases/tags/vX.Y.Z`.
+- Releases (D187, D194, D198): every merge to `main` publishes one by
+  itself. When the CI run of a push to `main` succeeds, `release.yml` (run
+  on `main` only) checks the tested commit if it is still `main`'s head
+  (else the newer commit's run releases both), tags it with the next patch
+  version (above every tag and v0.1.2, D196), runs `script/release.sh` and
+  uploads the binaries, `SHA256SUMS` and a signed build provenance
+  attestation (D197). Builds are reproducible and never use a cache; the
+  repo knows nothing of who installs it. Cloud sessions never tag or release
+  by hand. A rerun for a tagged commit only finishes that release; a manual
+  `workflow_dispatch` on `main` (optional version) is the fallback. Read the
+  outcome with `gh api repos/tonimelisma/goimapsync/releases/latest`.
 
 ## Cloud sessions
 
 All work happens in Claude Code cloud sessions; nothing in this repo needs
 another machine. The session's GitHub proxy cannot push tags, create releases or
-reach IMAP, so those run in GitHub Actions, started by a push to `main` or a
-`repository_dispatch` (`gh api` REST works; GraphQL, so `gh pr create`,
-does not).
+reach IMAP, so those run in GitHub Actions: releases after a successful CI
+run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
+(`gh api` REST works; GraphQL, so `gh pr create`, does not).
 
 - `.claude/hooks/session-start.sh` runs at session start and does nothing
   unless `CLAUDE_CODE_REMOTE=true`. It installs gcc, curl and git if missing

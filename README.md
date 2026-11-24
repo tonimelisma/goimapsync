@@ -26,14 +26,17 @@ install -D -m 0755 pimvault-v1.2.3-linux-amd64 ~/.local/bin/pimvault
 pimvault --version
 ```
 
-Each release is built by the repository's release workflow from its tag
+Each merge to `main` whose checks pass is released as the next patch version
+(merges in quick succession may share one). Each release
+is built by the repository's release workflow on `main` from its tag
 alone: no cache, no secret beyond GitHub's own token. It is signed with
 GitHub's build provenance attestations (Sigstore, no long-lived key). To
 check that a binary was built by that workflow from this repository:
 
 ```sh
 gh attestation verify pimvault-v1.2.3-linux-amd64 --repo tonimelisma/goimapsync \
-  --signer-workflow tonimelisma/goimapsync/.github/workflows/release.yml
+  --signer-workflow tonimelisma/goimapsync/.github/workflows/release.yml \
+  --source-ref refs/heads/main
 ```
 
 The same attestation is attached to each release as
