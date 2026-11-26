@@ -3,9 +3,9 @@
 # enables the APIs, creates the test token secrets (D158) and a service
 # account that may read them and add new versions, lets this repository's
 # GitHub Actions workflows act as that account through Workload Identity
-# Federation (D199), and prints the account's key for the cloud environment
-# (the weekly sign-in, D195). Run it in Google Cloud Shell with the pimvault
-# project selected.
+# Federation (D199). It creates no service account key (D201): the owner's
+# Mac reaches the secrets with the owner's own gcloud sign-in. Run it in
+# Google Cloud Shell with the pimvault project selected.
 set -euo pipefail
 
 project=$(gcloud config get-value project 2>/dev/null)
@@ -65,12 +65,3 @@ echo "Workload Identity provider for .github/workflows/e2e.yml:"
 gcloud iam workload-identity-pools providers describe goimapsync --location=global \
   --workload-identity-pool=github --format='value(name)'
 
-key=$(mktemp)
-trap 'rm -f "${key}"' EXIT
-gcloud iam service-accounts keys create "${key}" --iam-account="${account}" >/dev/null
-
-echo
-echo "Store this JSON as PIMVAULT_E2E_SERVICE_ACCOUNT in the cloud environment only (not in GitHub):"
-echo
-tr -d '\n' <"${key}"
-echo

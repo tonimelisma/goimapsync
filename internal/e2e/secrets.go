@@ -14,7 +14,6 @@ import (
 	"os"
 
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/jwt"
 
 	"github.com/tonimelisma/pimvault/internal/googleapi"
 )
@@ -38,13 +37,13 @@ type Secrets struct {
 }
 
 // ErrNoCredentials means the environment names no Secret Manager credentials.
-var ErrNoCredentials = errors.New("set PIMVAULT_E2E_ACCESS_TOKEN and PIMVAULT_E2E_PROJECT, or PIMVAULT_E2E_SERVICE_ACCOUNT")
+var ErrNoCredentials = errors.New("set PIMVAULT_E2E_ACCESS_TOKEN and PIMVAULT_E2E_PROJECT")
 
-// FromEnv returns the Secret Manager secrets the environment's credentials
-// reach (D199): in GitHub Actions a short-lived access token for the
-// service account from Workload Identity Federation, in
-// PIMVAULT_E2E_ACCESS_TOKEN with the project in PIMVAULT_E2E_PROJECT; in a
-// cloud session the service account key in PIMVAULT_E2E_SERVICE_ACCOUNT.
+// FromEnv returns the Secret Manager secrets reached with the access token in
+// PIMVAULT_E2E_ACCESS_TOKEN, in the project in PIMVAULT_E2E_PROJECT (D199,
+// D201): in GitHub Actions a short-lived token for the e2e service account
+// from Workload Identity Federation; on the owner's Mac the owner's own
+// `gcloud auth print-access-token`. No service account key exists.
 func FromEnv(ctx context.Context) (*Secrets, error) {
 	if token := os.Getenv("PIMVAULT_E2E_ACCESS_TOKEN"); token != "" {
 		project := os.Getenv("PIMVAULT_E2E_PROJECT")
@@ -53,10 +52,6 @@ func FromEnv(ctx context.Context) (*Secrets, error) {
 		}
 
 		return AccessToken(ctx, token, project), nil
-	}
-
-	if key := os.Getenv("PIMVAULT_E2E_SERVICE_ACCOUNT"); key != "" {
-		return ServiceAccount(ctx, []byte(key))
 	}
 
 	return nil, ErrNoCredentials
@@ -68,34 +63,6 @@ func AccessToken(ctx context.Context, token, project string) *Secrets {
 	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
 
 	return &Secrets{HTTP: oauth2.NewClient(ctx, src), BaseURL: SecretManagerURL, Project: project}
-}
-
-// ServiceAccount returns the Secret Manager secrets of the service account
-// whose JSON key is given, in the project the key belongs to.
-func ServiceAccount(ctx context.Context, key []byte) (*Secrets, error) {
-	var sa struct {
-		ClientEmail string `json:"client_email"` //nolint:tagliatelle // Google's key file names.
-		PrivateKey  string `json:"private_key"`  //nolint:tagliatelle // as above.
-		TokenURI    string `json:"token_uri"`    //nolint:tagliatelle // as above.
-		ProjectID   string `json:"project_id"`   //nolint:tagliatelle // as above.
-	}
-
-	if err := json.Unmarshal(key, &sa); err != nil {
-		return nil, fmt.Errorf("read service account key: %w", err)
-	}
-
-	if sa.ProjectID == "" {
-		return nil, errors.New("read service account key: no project_id")
-	}
-
-	cfg := &jwt.Config{
-		Email:      sa.ClientEmail,
-		PrivateKey: []byte(sa.PrivateKey),
-		TokenURL:   sa.TokenURI,
-		Scopes:     []string{"https://www.googleapis.com/auth/cloud-platform"},
-	}
-
-	return &Secrets{HTTP: oauth2.NewClient(ctx, cfg.TokenSource(ctx)), BaseURL: SecretManagerURL, Project: sa.ProjectID}, nil
 }
 
 func (s *Secrets) path(name string) string {

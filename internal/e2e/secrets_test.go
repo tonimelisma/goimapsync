@@ -61,7 +61,6 @@ func TestSecrets_AccessAndAdd(t *testing.T) {
 func TestFromEnv_AccessToken(t *testing.T) {
 	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "wif-token")
 	t.Setenv("PIMVAULT_E2E_PROJECT", "p")
-	t.Setenv("PIMVAULT_E2E_SERVICE_ACCOUNT", "not json: the access token wins")
 
 	var auth string
 
@@ -93,18 +92,8 @@ func TestFromEnv_AccessTokenNeedsProject(t *testing.T) {
 	require.ErrorContains(t, err, "PIMVAULT_E2E_PROJECT")
 }
 
-func TestFromEnv_ServiceAccountKey(t *testing.T) {
-	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "")
-	t.Setenv("PIMVAULT_E2E_SERVICE_ACCOUNT", `{"client_email":"sa@p.iam.gserviceaccount.com","token_uri":"https://oauth2.googleapis.com/token","project_id":"p"}`)
-
-	secrets, err := e2e.FromEnv(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, "p", secrets.Project)
-}
-
 func TestFromEnv_None(t *testing.T) {
 	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "")
-	t.Setenv("PIMVAULT_E2E_SERVICE_ACCOUNT", "")
 
 	_, err := e2e.FromEnv(t.Context())
 	require.ErrorIs(t, err, e2e.ErrNoCredentials)

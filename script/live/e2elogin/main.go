@@ -1,8 +1,9 @@
 // Command e2elogin signs a test account in and stores its tokens in Secret
-// Manager (D158, D159), with the service account key in
-// PIMVAULT_E2E_SERVICE_ACCOUNT, which cloud sessions keep for this (D199):
+// Manager (D158, D201), when a stored token was revoked or fails. It runs on
+// the owner's Mac with the owner's own gcloud access token:
 //
-//	go run ./script/live/e2elogin [-in FILE] [-account EMAIL] gmail|outlook
+//	PIMVAULT_E2E_ACCESS_TOKEN=$(gcloud auth print-access-token) PIMVAULT_E2E_PROJECT=pimvault-28120 \
+//	  go run ./script/live/e2elogin [-in FILE] [-account EMAIL] gmail|outlook
 //
 // It prints the sign-in URL, then waits for the address the browser was
 // sent to. With -in it creates FILE as a named pipe and reads that address
