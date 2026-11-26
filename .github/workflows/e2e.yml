@@ -230,7 +230,7 @@ jobs:
           fi
           body="$text
 
-          Read the run's log, fix the cause and merge the fix; the next weekly run closes this issue when it passes. If a test account's sign-in expired, do the weekly test sign-in (AGENTS.md).
+          Read the run's log, fix the cause and merge the fix; the next weekly run closes this issue when it passes. If a test account's token was revoked or fails, sign it in again (AGENTS.md: Re-sign-in when a test token fails).
 
           If the weekly run stops appearing in the Actions tab, GitHub may have disabled its schedule for inactivity. Enable the E2E workflow again there: without the weekly run, the Outlook test token expires through disuse and needs a new sign-in."
           gh api "repos/$repo/issues" -f title="Weekly end-to-end run failed" -f body="$body" -f "labels[]=$label" --jq '"e2e: opened #\(.number)"'

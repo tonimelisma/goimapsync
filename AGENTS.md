@@ -108,11 +108,13 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   (`go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12`).
 - Closing the loop needs no Docker: the unit tests drive the real code against
   in-process fakes (`internal/outlookimap/outlookimaptest` is an IMAP server
-  with Outlook.com's folders and XOAUTH2). Live probes over HTTPS (Gmail,
-  Graph) run here: `go run ./script/live/tokens -out DIR`, then
+  with Outlook.com's folders and XOAUTH2). Cloud sessions hold no Google
+  credential (D201), so live probes over HTTPS (Gmail, Graph) run on the
+  owner's Mac: `go run ./script/live/tokens -out DIR` with the owner's
+  gcloud token (see "Re-sign-in when a test token fails"), then
   `go build -o /tmp/pimvault ./cmd/pimvault` and run it with
-  `XDG_CONFIG_HOME=DIR`. IMAP (port 993) is refused here; anything needing it
-  runs through the end-to-end workflow.
+  `XDG_CONFIG_HOME=DIR`. IMAP (port 993) is refused in cloud sessions;
+  anything needing it runs through the end-to-end workflow.
 - End-to-end test (D193, D199): `.github/workflows/e2e.yml` runs
   `go test -tags e2e -timeout 40m ./internal/e2e/` only in GitHub Actions,
   never on a developer machine or the owner's server. It runs on every push
@@ -140,10 +142,13 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   keeps one issue labelled `e2e-failure` open while it fails; it closes it
   when it passes. Dispatch the workflow with `scheduled` set to test that
   path.
-- Weekly test sign-in (D159, D195), for `gmail` (and `outlook` when its
-  sign-in fails):
-  1. `go run ./script/live/e2elogin -in /tmp/e2e-redirect gmail >/tmp/e2e-login.log 2>&1 &`
-     (background; the same process keeps the PKCE state).
+- Re-sign-in when a test token fails (D195, D201). The Google app is in
+  production, so sign-ins no longer expire weekly; sign a test account in
+  again only when its stored token was revoked or the e2e run says it fails.
+  It runs in a local session on the owner's Mac, where the owner's gcloud
+  user can reach Secret Manager:
+  1. `PIMVAULT_E2E_ACCESS_TOKEN=$(gcloud auth print-access-token) PIMVAULT_E2E_PROJECT=pimvault-28120 go run ./script/live/e2elogin -in /tmp/e2e-redirect gmail >/tmp/e2e-login.log 2>&1 &`
+     (or `outlook`; background; the same process keeps the PKCE state).
   2. Give the owner the URL from `/tmp/e2e-login.log`. The owner opens it on
      the phone in a private tab, signs in as the test account, allows access
      and pastes back the address the browser failed to load
@@ -157,26 +162,21 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   4. Dispatch the end-to-end workflow for `main` to confirm.
 - Network hosts a cloud session needs: `proxy.golang.org`,
   `sum.golang.org`, `go.dev`, `dl.google.com`, `github.com` and Ubuntu's apt
-  mirrors for setup; for live probes and sign-ins also
-  `oauth2.googleapis.com`, `secretmanager.googleapis.com`,
-  `www.googleapis.com`, `gmail.googleapis.com`, `people.googleapis.com`,
-  `tasks.googleapis.com`, `openidconnect.googleapis.com`, `login.microsoftonline.com`
-  and `graph.microsoft.com`.
+  mirrors for setup.
 
 ## Owner setup
 
 One-time steps only the owner can do; agents never handle secret values.
 
 - `script/live/google-setup.sh` (Google Cloud Shell): the Secret Manager
-  secrets, the `pimvault-e2e` service account, the Workload Identity pool
-  the e2e workflow signs in with, and a service account key.
-- That key only as the "goimapsync" cloud environment's variable
-  `PIMVAULT_E2E_SERVICE_ACCOUNT`, for the weekly sign-in (`e2elogin`) and
-  live probes; Workload Identity works only inside Actions, so the key
-  stays. The code reads the key itself, so it cannot be a proxy-injected
-  secret. Plus the network hosts above. GitHub holds no Google secret.
-- The weekly sign-in: open the URL the agent gives you in a private tab,
-  sign in as the test account, paste back the failed address.
+  secrets, the `pimvault-e2e` service account and the Workload Identity
+  pool the e2e workflow signs in with. The service account has no key
+  (D201); GitHub and the cloud environment hold no Google secret.
+- `gcloud auth login` on the Mac, as a user who can read and add versions
+  of the test token secrets in `pimvault-28120`.
+- A re-sign-in, when a test token fails: open the URL the agent gives you
+  in a private tab, sign in as the test account, paste back the failed
+  address.
 
 ## Workflow
 
@@ -201,7 +201,8 @@ One-time steps only the owner can do; agents never handle secret values.
   change: an F-row with the date, account type and evidence, a line in
   `docs/research/api-quirks.md`, a fake that reproduces it and a test. Probe
   undocumented behaviour live before relying on it (`go run
-  ./script/live/tokens -out DIR` signs in as the test accounts).
+  ./script/live/tokens -out DIR` on the owner's Mac signs in as the test
+  accounts).
 - Incidents: when a live run loses, duplicates or misreports data, or touches
   the wrong account, add an entry to `docs/incidents.md` in the fix's PR.
 - Before each PR, run `/code-review` on the diff in a fresh context. Fix

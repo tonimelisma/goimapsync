@@ -56,7 +56,7 @@ Status: **handled** (with the decision or code that handles it), **open**
 
 | Fact | Quirk | Status |
 |---|---|---|
-| F1, F30 | Testing-status refresh tokens expire after 7 days | known (D159) |
+| F1, F30 | Testing-status refresh tokens expire after 7 days | avoided: app in production (D156, D201) |
 | F24 | device code does not allow Gmail scopes | handled: paste URL (D70) |
 | F40 | consent screen and clients are set up in the Console | known |
 
