@@ -73,10 +73,9 @@ address from the address bar and paste it into pimvault. One sign-in covers
 backup, restore and migrate. You can sign in to any number of accounts. Each
 is named `provider:email`, and commands accept any unique part of that name.
 
-**Gmail sign-ins:** pimvault's Google app is in Google's Testing status. Only
-accounts added as its test users can sign in, and Google ends their sign-ins
-after 7 days. To back up your own Gmail account until the app is published,
-create your own Google OAuth client:
+**Gmail sign-ins:** pimvault's Google app is published "In production" without
+Google's verification, so sign-in shows an unverified-app warning; sign-ins do
+not expire after 7 days. To use your own Google OAuth client instead:
 
 1. In the Google Cloud console, create a project and enable the Gmail, Google
    Calendar, People and Google Tasks APIs.
