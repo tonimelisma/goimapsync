@@ -108,10 +108,10 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   (`go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12`).
 - Closing the loop needs no Docker: the unit tests drive the real code against
   in-process fakes (`internal/outlookimap/outlookimaptest` is an IMAP server
-  with Outlook.com's folders and XOAUTH2). Cloud sessions hold no Google
-  credential (D201), so live probes over HTTPS (Gmail, Graph) run on the
-  owner's Mac: `go run ./script/live/tokens -out DIR` with the owner's
-  gcloud token (see "Re-sign-in when a test token fails"), then
+  with Outlook.com's folders and XOAUTH2). Cloud sessions hold no Key Vault
+  credential (D201, D202), so live probes over HTTPS (Gmail, Graph) run on
+  the owner's Mac: `go run ./script/live/tokens -out DIR` with the owner's
+  Azure CLI token (see "Re-sign-in when a test token fails"), then
   `go build -o /tmp/pimvault ./cmd/pimvault` and run it with
   `XDG_CONFIG_HOME=DIR`. IMAP (port 993) is refused in cloud sessions;
   anything needing it runs through the end-to-end workflow.
@@ -120,7 +120,7 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   never on a developer machine or the owner's server. It runs on every push
   to `main`, on every pull request from a branch of this repository (never
   forks), weekly, and on dispatch. A branch gets e2e by opening its PR; each
-  push to the PR runs it again. Dependabot's PRs get no Google token, so
+  push to the PR runs it again. Dependabot's PRs get no Key Vault token, so
   they skip it; dispatch it for their branch. To rerun it for a branch, e.g.
   after an `error`: `gh api repos/tonimelisma/pimvault/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'`.
   The result is the `e2e` commit status of the branch's head, the merge
@@ -133,21 +133,25 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   `gh api repos/tonimelisma/pimvault/actions/runs/RUN/jobs`, then
   `.../actions/jobs/JOB/logs`. The log is public; the workflow masks the
   test accounts' emails and stored tokens (`script/live/tokens -mask`), and
-  nothing else it prints may name an account or a token. Google
-  credentials are keyless: Workload Identity Federation (pool `github`,
-  provider `goimapsync`, restricted to this repository's and owner's IDs)
-  gives the run a
-  one-hour token for the `pimvault-e2e` service account. The weekly run
-  re-enables its own workflow so GitHub does not disable the schedule, and
+  nothing else it prints may name an account or a token. The test tokens
+  are the secrets `e2e-gmail-token` and `e2e-outlook-token` in Azure Key
+  Vault `kv-pimvault-ci` (D202), reached keylessly: the `e2e` job runs in
+  the GitHub environment `e2e` (variables `AZURE_CLIENT_ID`,
+  `AZURE_TENANT_ID`, `AZURE_KEY_VAULT`) and exchanges GitHub's OIDC token
+  at Entra ID for a Key Vault token of the app `gh-pimvault-e2e`, whose
+  only federated credential is `repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e` (the repository uses immutable OIDC subjects).
+  The Go code reads `PIMVAULT_E2E_ACCESS_TOKEN` and
+  `PIMVAULT_E2E_KEY_VAULT`; each stored refresh adds a secret version.
+  The weekly run re-enables its own workflow so GitHub does not disable the schedule, and
   keeps one issue labelled `e2e-failure` open while it fails; it closes it
   when it passes. Dispatch the workflow with `scheduled` set to test that
   path.
-- Re-sign-in when a test token fails (D195, D201). The Google app is in
+- Re-sign-in when a test token fails (D195, D201, D202). The Google app is in
   production, so sign-ins no longer expire weekly; sign a test account in
   again only when its stored token was revoked or the e2e run says it fails.
-  It runs in a local session on the owner's Mac, where the owner's gcloud
-  user can reach Secret Manager:
-  1. `PIMVAULT_E2E_ACCESS_TOKEN=$(gcloud auth print-access-token) PIMVAULT_E2E_PROJECT=pimvault-28120 go run ./script/live/e2elogin -in /tmp/e2e-redirect gmail >/tmp/e2e-login.log 2>&1 &`
+  It runs in a local session on the owner's Mac, where the owner's Azure
+  CLI user can read and set the vault's secrets:
+  1. `PIMVAULT_E2E_ACCESS_TOKEN=$(az account get-access-token --resource https://vault.azure.net --query accessToken -o tsv) PIMVAULT_E2E_KEY_VAULT=kv-pimvault-ci go run ./script/live/e2elogin -in /tmp/e2e-redirect gmail >/tmp/e2e-login.log 2>&1 &`
      (or `outlook`; background; the same process keeps the PKCE state).
   2. Give the owner the URL from `/tmp/e2e-login.log`. The owner opens it on
      the phone in a private tab, signs in as the test account, allows access
@@ -168,12 +172,15 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
 
 One-time steps only the owner can do; agents never handle secret values.
 
-- `script/live/google-setup.sh` (Google Cloud Shell): the Secret Manager
-  secrets, the `pimvault-e2e` service account and the Workload Identity
-  pool the e2e workflow signs in with. The service account has no key
-  (D201); GitHub and the cloud environment hold no Google secret.
-- `gcloud auth login` on the Mac, as a user who can read and add versions
-  of the test token secrets in `pimvault-28120`.
+- `script/live/google-setup.sh` (Google Cloud Shell): enables the Google
+  APIs the Google app uses.
+- Azure (D202): Key Vault `kv-pimvault-ci` with the test token secrets, the
+  Entra ID app `gh-pimvault-e2e` (Key Vault Secrets Officer on that vault,
+  one federated credential for the immutable OIDC subject
+  `repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e`) and the GitHub environment `e2e` holding its IDs as variables. No key or
+  client secret exists; GitHub and the cloud environment hold no secret.
+- `az login` on the Mac, as a user who can read and set secrets in
+  `kv-pimvault-ci`.
 - A re-sign-in, when a test token fails: open the URL the agent gives you
   in a private tab, sign in as the test account, paste back the failed
   address.
@@ -192,7 +199,7 @@ One-time steps only the owner can do; agents never handle secret values.
 - Tests: unit tests with testify, fakes at I/O seams, failure injection and
   golden files. End-to-end tests against the real test accounts run in the
   e2e workflow before each PR that changes code merges (D179, D193, D199);
-  tokens come from Secret Manager (D158).
+  tokens come from Azure Key Vault (D202).
   Test account names and credentials are never committed (`.env`,
   `.testdata/`), and account emails are redacted in shown output and masked
   in workflow logs.

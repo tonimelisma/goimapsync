@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -21,27 +20,30 @@ func TestSecrets_AccessAndAdd(t *testing.T) {
 	var added []byte
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/projects/p/secrets/s/versions/latest:access":
-			_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck // test server.
-				"payload": map[string]string{"data": base64.StdEncoding.EncodeToString([]byte(stored))},
-			})
-		case "/projects/p/secrets/s:addVersion":
-			var body struct {
-				Payload struct{ Data string } `json:"payload"`
-			}
+		if r.URL.Path != "/secrets/s" || r.URL.Query().Get("api-version") != "7.4" {
+			w.WriteHeader(http.StatusNotFound)
+
+			return
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			_ = json.NewEncoder(w).Encode(map[string]any{"value": stored, "id": "x"}) //nolint:errcheck // test server.
+		case http.MethodPut:
+			var body struct{ Value string }
 
 			raw, _ := io.ReadAll(r.Body) //nolint:errcheck // test server.
 			assert.NoError(t, json.Unmarshal(raw, &body))
-			added, _ = base64.StdEncoding.DecodeString(body.Payload.Data) //nolint:errcheck // checked below.
-			_, _ = w.Write([]byte("{}"))                                  //nolint:errcheck // test server.
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			added = []byte(body.Value)
+			_, _ = w.Write([]byte(`{"id":"x"}`)) //nolint:errcheck // test server.
 		default:
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
 	}))
 	t.Cleanup(srv.Close)
 
-	secrets := &e2e.Secrets{HTTP: srv.Client(), BaseURL: srv.URL, Project: "p"}
+	secrets := &e2e.Secrets{HTTP: srv.Client(), BaseURL: srv.URL}
 
 	s, err := secrets.Access(t.Context(), "s")
 	require.NoError(t, err)
@@ -58,38 +60,55 @@ func TestSecrets_AccessAndAdd(t *testing.T) {
 	assert.Equal(t, "rt", got.Token.RefreshToken)
 }
 
+func TestSecrets_Error(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":{"code":"Forbidden","message":"no access"}}`)) //nolint:errcheck // test server.
+	}))
+	t.Cleanup(srv.Close)
+
+	secrets := &e2e.Secrets{HTTP: srv.Client(), BaseURL: srv.URL}
+
+	_, err := secrets.Access(t.Context(), "s")
+	require.EqualError(t, err, "read secret s: key vault: http 403: Forbidden: no access")
+
+	err = secrets.Add(t.Context(), "s", &e2e.Secret{})
+	require.EqualError(t, err, "store secret s: key vault: http 403: Forbidden: no access")
+}
+
 func TestFromEnv_AccessToken(t *testing.T) {
-	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "wif-token")
-	t.Setenv("PIMVAULT_E2E_PROJECT", "p")
+	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "vault-token")
+	t.Setenv("PIMVAULT_E2E_KEY_VAULT", "kv-test")
 
 	var auth string
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth = r.Header.Get("Authorization")
-		_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck // test server.
-			"payload": map[string]string{"data": base64.StdEncoding.EncodeToString([]byte(`{"account":"gmail:a@example.com"}`))},
-		})
+		_ = json.NewEncoder(w).Encode(map[string]any{"value": `{"account":"gmail:a@example.com"}`}) //nolint:errcheck // test server.
 	}))
 	t.Cleanup(srv.Close)
 
 	secrets, err := e2e.FromEnv(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "p", secrets.Project)
+	assert.Equal(t, "https://kv-test.vault.azure.net", secrets.BaseURL)
 
 	secrets.BaseURL = srv.URL
 
 	s, err := secrets.Access(t.Context(), "s")
 	require.NoError(t, err)
 	assert.Equal(t, "gmail:a@example.com", s.Account)
-	assert.Equal(t, "Bearer wif-token", auth)
+	assert.Equal(t, "Bearer vault-token", auth)
 }
 
-func TestFromEnv_AccessTokenNeedsProject(t *testing.T) {
-	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "wif-token")
-	t.Setenv("PIMVAULT_E2E_PROJECT", "")
+func TestFromEnv_AccessTokenNeedsVault(t *testing.T) {
+	t.Setenv("PIMVAULT_E2E_ACCESS_TOKEN", "vault-token")
 
-	_, err := e2e.FromEnv(t.Context())
-	require.ErrorContains(t, err, "PIMVAULT_E2E_PROJECT")
+	for _, vault := range []string{"", "evil.example.com/x", "a"} {
+		t.Setenv("PIMVAULT_E2E_KEY_VAULT", vault)
+
+		_, err := e2e.FromEnv(t.Context())
+		require.ErrorContains(t, err, "PIMVAULT_E2E_KEY_VAULT", vault)
+	}
 }
 
 func TestFromEnv_None(t *testing.T) {
