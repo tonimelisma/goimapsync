@@ -21,7 +21,7 @@ import (
 // The test accounts' secrets (script/live/e2elogin).
 var secretNames = []string{"e2e-gmail-token", "e2e-outlook-token"} //nolint:gochecknoglobals // a fixed list.
 
-// store returns the Secret Manager secrets (D158) the environment's
+// store returns the Key Vault secrets (D202) the environment's
 // credentials reach (e2e.FromEnv).
 func store(t *testing.T) *e2e.Secrets {
 	t.Helper()

@@ -1,8 +1,9 @@
-// Command e2elogin signs a test account in and stores its tokens in Secret
-// Manager (D158, D201), when a stored token was revoked or fails. It runs on
-// the owner's Mac with the owner's own gcloud access token:
+// Command e2elogin signs a test account in and stores its tokens in Azure
+// Key Vault (D201, D202), when a stored token was revoked or fails. It runs
+// on the owner's Mac with the owner's own Azure CLI access token:
 //
-//	PIMVAULT_E2E_ACCESS_TOKEN=$(gcloud auth print-access-token) PIMVAULT_E2E_PROJECT=pimvault-28120 \
+//	PIMVAULT_E2E_ACCESS_TOKEN=$(az account get-access-token --resource https://vault.azure.net --query accessToken -o tsv) \
+//	PIMVAULT_E2E_KEY_VAULT=kv-pimvault-ci \
 //	  go run ./script/live/e2elogin [-in FILE] [-account EMAIL] gmail|outlook
 //
 // It prints the sign-in URL, then waits for the address the browser was
