@@ -137,11 +137,17 @@ jobs:
           oidc=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | j value)
           echo "::add-mask::$oidc"
-          tok=$(curl -sSf "https://login.microsoftonline.com/$AZURE_TENANT_ID/oauth2/v2.0/token" \
+          # Entra ID's error names the cause (e.g. the subject it got) and
+          # holds no token.
+          if ! resp=$(curl -sS --fail-with-body "https://login.microsoftonline.com/$AZURE_TENANT_ID/oauth2/v2.0/token" \
             -d client_id="$AZURE_CLIENT_ID" -d grant_type=client_credentials \
             --data-urlencode scope=https://vault.azure.net/.default \
             --data-urlencode client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer \
-            --data-urlencode client_assertion="$oidc" | j access_token)
+            --data-urlencode client_assertion="$oidc"); then
+            j error_description <<< "$resp" >&2 || true
+            exit 1
+          fi
+          tok=$(j access_token <<< "$resp")
           echo "::add-mask::$tok"
           d="EOF_$(openssl rand -hex 8)"
           printf '%s<<%s\n%s\n%s\n' PIMVAULT_E2E_ACCESS_TOKEN "$d" "$tok" "$d" >> "$GITHUB_ENV"
