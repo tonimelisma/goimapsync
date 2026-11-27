@@ -93,8 +93,9 @@ jobs:
     needs: resolve
     runs-on: ubuntu-latest
     timeout-minutes: 50
-    # Its variables name the Entra ID app, tenant and vault; the app's
-    # federated credential is repo:tonimelisma/pimvault:environment:e2e.
+    # Its variables name the Entra ID app, tenant and vault. This repository
+    # uses immutable OIDC subjects, so the app's federated credential is
+    # repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e.
     environment: e2e
     permissions:
       contents: read

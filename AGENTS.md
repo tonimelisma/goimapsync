@@ -139,7 +139,7 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   the GitHub environment `e2e` (variables `AZURE_CLIENT_ID`,
   `AZURE_TENANT_ID`, `AZURE_KEY_VAULT`) and exchanges GitHub's OIDC token
   at Entra ID for a Key Vault token of the app `gh-pimvault-e2e`, whose
-  only federated credential is `repo:tonimelisma/pimvault:environment:e2e`.
+  only federated credential is `repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e` (the repository uses immutable OIDC subjects).
   The Go code reads `PIMVAULT_E2E_ACCESS_TOKEN` and
   `PIMVAULT_E2E_KEY_VAULT`; each stored refresh adds a secret version.
   The weekly run re-enables its own workflow so GitHub does not disable the schedule, and
@@ -176,7 +176,7 @@ One-time steps only the owner can do; agents never handle secret values.
   APIs the Google app uses.
 - Azure (D202): Key Vault `kv-pimvault-ci` with the test token secrets, the
   Entra ID app `gh-pimvault-e2e` (Key Vault Secrets Officer on that vault,
-  one federated credential `repo:tonimelisma/pimvault:environment:e2e`)
+  one federated credential `repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e` (the repository uses immutable OIDC subjects))
   and the GitHub environment `e2e` holding its IDs as variables. No key or
   client secret exists; GitHub and the cloud environment hold no secret.
 - `az login` on the Mac, as a user who can read and set secrets in
