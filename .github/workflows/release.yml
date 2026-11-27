@@ -196,7 +196,7 @@ jobs:
             exit 0
           fi
           have=$(gh api "$api/$id" --jq '.assets[].name' | sort)
-          want=$(cd dist && ls | sort)
+          want=$(find dist -maxdepth 1 -type f -printf '%f\n' | sort)
           if [[ "$have" != "$want" ]]; then
             gh release upload "$VERSION" --clobber dist/*
           fi
