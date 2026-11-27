@@ -176,8 +176,8 @@ One-time steps only the owner can do; agents never handle secret values.
   APIs the Google app uses.
 - Azure (D202): Key Vault `kv-pimvault-ci` with the test token secrets, the
   Entra ID app `gh-pimvault-e2e` (Key Vault Secrets Officer on that vault,
-  one federated credential `repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e` (the repository uses immutable OIDC subjects))
-  and the GitHub environment `e2e` holding its IDs as variables. No key or
+  one federated credential for the immutable OIDC subject
+  `repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e`) and the GitHub environment `e2e` holding its IDs as variables. No key or
   client secret exists; GitHub and the cloud environment hold no secret.
 - `az login` on the Mac, as a user who can read and set secrets in
   `kv-pimvault-ci`.
