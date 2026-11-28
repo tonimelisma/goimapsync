@@ -1,15 +1,14 @@
 name: E2E
 
-# End-to-end test against the throwaway test accounts (D193, D199). It runs
-# only here in GitHub Actions, never on a developer machine or the owner's
-# server: on every push to main, on pull requests from this repository's own
+# End-to-end test against the throwaway test accounts (ADR 0018). It runs
+# only here in GitHub Actions, never on a developer machine or a server: on every push to main, on pull requests from this repository's own
 # branches (never forks, never pull_request_target), weekly, and when a
 # cloud session dispatches it again for a branch:
 #   gh api repos/tonimelisma/pimvault/dispatches -f event_type=e2e -f 'client_payload[ref]=BRANCH'
 # The result is the "e2e" commit status of the tested commit: pending, then
 # success, failure, or error when the run was cancelled (dispatch again).
 #
-# The test tokens live in Azure Key Vault (D202), reached keylessly: the e2e
+# The test tokens live in Azure Key Vault (ADR 0019), reached keylessly: the e2e
 # job runs in the GitHub environment "e2e", whose Entra ID app trusts only
 # this repository's OIDC token for that environment and may read and set
 # the vault's secrets. A pull request runs its own copy of this file with
@@ -240,7 +239,7 @@ jobs:
           fi
           body="$text
 
-          Read the run's log, fix the cause and merge the fix; the next weekly run closes this issue when it passes. If a test account's token was revoked or fails, sign it in again (AGENTS.md: Re-sign-in when a test token fails).
+          Read the run's log, fix the cause and merge the fix; the next weekly run closes this issue when it passes. If a test account's token was revoked or fails, sign it in again (CLAUDE.md: Re-sign-in when a test token fails).
 
           If the weekly run stops appearing in the Actions tab, GitHub may have disabled its schedule for inactivity. Enable the E2E workflow again there: without the weekly run, the Outlook test token expires through disuse and needs a new sign-in."
           gh api "repos/$repo/issues" -f title="Weekly end-to-end run failed" -f body="$body" -f "labels[]=$label" --jq '"e2e: opened #\(.number)"'

@@ -73,6 +73,7 @@ func (f *gmailFixture) byLabels() map[string][]string {
 
 const date = "Mon, 02 Mar 2026 10:00:00 +0200"
 
+// Validates: PV-152, PV-153, PV-163, PV-165, PV-167, PV-171
 func TestGmailMail_RestoreMapsFoldersAndSkipsCopies(t *testing.T) {
 	f := newGmailFixture(t)
 	// The account already has a; the archive's copy writes the date and
@@ -103,6 +104,7 @@ func TestGmailMail_RestoreMapsFoldersAndSkipsCopies(t *testing.T) {
 	assert.Equal(t, restore.Result{Present: 7}, res)
 }
 
+// Validates: PV-154
 func TestGmailMail_RepairsMissingDateAndMessageIDInTheCopy(t *testing.T) {
 	f := newGmailFixture(t)
 
@@ -172,6 +174,7 @@ func findRaw(t *testing.T, f *gmailFixture, text string) string {
 	return found[0]
 }
 
+// Validates: PV-162
 func TestGmailMail_DryRunWritesNothing(t *testing.T) {
 	f := newGmailFixture(t)
 	f.srv.Add("existing", string(eml("<a@x>", date, "ann@example.com", "a")), "INBOX")
@@ -192,6 +195,7 @@ func TestGmailMail_DryRunWritesNothing(t *testing.T) {
 	assert.Empty(t, f.srv.Labels())
 }
 
+// Validates: PV-167
 func TestGmailMail_MessageInSeveralFoldersIsWrittenOnce(t *testing.T) {
 	f := newGmailFixture(t)
 	f.put(t, archive.Inbox, "a", eml("<a@x>", date, "x@example.com", "a"))
@@ -210,6 +214,7 @@ func TestGmailMail_MessageInSeveralFoldersIsWrittenOnce(t *testing.T) {
 	assert.Equal(t, map[string][]string{"a": {"INBOX", "Label_1"}, "b": {"INBOX"}, "c": {"DRAFT", "Label_1"}}, f.byLabels())
 }
 
+// Validates: PV-155
 func TestGmailMail_FindsCopiesGmailRewroteOrDecoded(t *testing.T) {
 	f := newGmailFixture(t)
 	// Gmail shows display names decoded; the archive has them in a charset
@@ -233,6 +238,7 @@ func TestGmailMail_FindsCopiesGmailRewroteOrDecoded(t *testing.T) {
 // Gmail's Message-ID search cannot find a Message-ID holding an
 // encoded-word (F84); such copies are found by date and sender and matched
 // on the Message-ID, so a second run writes nothing.
+// Validates: PV-156
 func TestGmailMail_FindsEncodedWordMessageID(t *testing.T) {
 	f := newGmailFixture(t)
 	f.put(t, archive.Inbox, "a", eml("<=?utf-8?b?aDE3?=-a@x>", date, "x@example.com", "a"))
@@ -251,6 +257,7 @@ func TestGmailMail_FindsEncodedWordMessageID(t *testing.T) {
 	assert.Equal(t, restore.Result{Present: 3}, res)
 }
 
+// Validates: PV-166, PV-168
 func TestGmailMail_LabelNamesMatchAnyCaseAndSystemNamesAreGmails(t *testing.T) {
 	f := newGmailFixture(t)
 	f.srv.AddLabel("Label_9", "work")
@@ -271,6 +278,7 @@ func TestGmailMail_LabelNamesMatchAnyCaseAndSystemNamesAreGmails(t *testing.T) {
 	assert.Equal(t, restore.Result{Present: 3}, res)
 }
 
+// Validates: PV-169
 func TestGmailMail_RefusedLabelNamesAreRenamed(t *testing.T) {
 	f := newGmailFixture(t)
 	f.srv.AddLabel("Label_9", "Work Stuff")

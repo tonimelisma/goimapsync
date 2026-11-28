@@ -45,6 +45,7 @@ func holdLock(dir string) {
 	select {} // held until the test kills this process
 }
 
+// Validates: PV-110
 func TestLock_SecondRunIsRefusedAndCrashedRunsLockIsTakenOver(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "state")
 

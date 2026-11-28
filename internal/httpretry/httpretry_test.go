@@ -102,6 +102,7 @@ func get(t *testing.T, rt http.RoundTripper) (int, error) {
 	return resp.StatusCode, nil
 }
 
+// Validates: PV-111
 func TestRetryAfterSecondsIsHonored(t *testing.T) {
 	base := steps(step{code: 429, retryAfter: "7"}, 200)
 	sl := &sleeps{}
@@ -112,6 +113,7 @@ func TestRetryAfterSecondsIsHonored(t *testing.T) {
 	assert.Equal(t, []time.Duration{7 * time.Second}, sl.waits)
 }
 
+// Validates: PV-111
 func TestRetryAfterDateIsHonored(t *testing.T) {
 	at := time.Now().Add(30 * time.Second).UTC().Format(http.TimeFormat)
 	base := steps(step{code: 503, retryAfter: at}, 200)
@@ -230,6 +232,7 @@ func TestCanceledWaitStops(t *testing.T) {
 	require.ErrorIs(t, err, context.Canceled)
 }
 
+// Validates: PV-111
 func TestThrottledRequestsGetMoreAttempts(t *testing.T) {
 	codes := make([]any, 0, 10)
 	for range 9 {

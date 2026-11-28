@@ -1,5 +1,5 @@
 // Package archive owns the files of the local archive: where an account's
-// items live (docs/requirements.md D29), how folder names become directories
+// items live (D29), how folder names become directories
 // (D142), and writing, moving and removing item files safely (D54, D58).
 // Items are files named by their provider ID, capitals marked, plus an
 // extension (D36, D45, D178).

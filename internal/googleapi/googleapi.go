@@ -1,5 +1,5 @@
 // Package googleapi holds what pimvault's Google REST clients share
-// (docs/requirements.md D140): GET with JSON decoding, Google's error format
+// (D140): GET with JSON decoding, Google's error format
 // and its rate-limit errors.
 package googleapi
 

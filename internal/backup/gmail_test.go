@@ -87,6 +87,7 @@ func listFiles(t *testing.T, root string) []string {
 	return paths
 }
 
+// Validates: PV-003, PV-050, PV-051, PV-057, PV-059
 func TestGmailMail_FirstBackupListsEverything(t *testing.T) {
 	f := newFixture(t)
 	f.srv.AddLabel("L1", "Work/Projects")
@@ -118,6 +119,7 @@ func TestGmailMail_FirstBackupListsEverything(t *testing.T) {
 	assert.NotEmpty(t, f.state.HistoryID)
 }
 
+// Validates: PV-102
 func TestGmailMail_IncrementalFollowsHistory(t *testing.T) {
 	f := newFixture(t)
 	f.srv.Add("m1", "one", "INBOX")
@@ -142,6 +144,7 @@ func TestGmailMail_IncrementalFollowsHistory(t *testing.T) {
 	assert.Equal(t, backup.Result{Files: 3}, res, "nothing changed")
 }
 
+// Validates: PV-103
 func TestGmailMail_LabelRenameListsEverything(t *testing.T) {
 	f := newFixture(t)
 	f.srv.AddLabel("L1", "Old")
@@ -157,6 +160,7 @@ func TestGmailMail_LabelRenameListsEverything(t *testing.T) {
 	assert.Zero(t, f.srv.Requests["/history"])
 }
 
+// Validates: PV-103
 func TestGmailMail_ExpiredHistoryListsEverything(t *testing.T) {
 	f := newFixture(t)
 	f.srv.Add("m1", "one", "INBOX")
@@ -238,6 +242,7 @@ func TestGmailMail_CanceledRunReturnsCountsSoFar(t *testing.T) {
 	assert.Nil(t, next)
 }
 
+// Validates: PV-100
 func TestGmailMail_FullListingMirrorsArchive(t *testing.T) {
 	f := newFixture(t)
 	f.srv.Add("m1", "one", "INBOX")
@@ -281,6 +286,7 @@ func TestGmailMail_ReportsDownloadProgress(t *testing.T) {
 	assert.Equal(t, [][2]int{{0, 0}}, reports, "nothing to download")
 }
 
+// Validates: PV-106
 func TestGmailMail_DeletedMessagesAreKeptAside(t *testing.T) {
 	f := newFixture(t)
 	f.srv.Add("m1", "one", "INBOX")
@@ -295,6 +301,7 @@ func TestGmailMail_DeletedMessagesAreKeptAside(t *testing.T) {
 	assert.Equal(t, []string{"Inbox/m2.eml"}, listFiles(t, f.root+"-aside"))
 }
 
+// Validates: PV-107
 func TestGmailMail_MassDeletionIsWithheld(t *testing.T) {
 	f := newFixture(t)
 	for i := range 60 {
@@ -329,6 +336,7 @@ func TestGmailMail_MassDeletionIsWithheld(t *testing.T) {
 	assert.Len(t, listFiles(t, f.root+"-aside"), 14)
 }
 
+// Validates: PV-107
 func TestGmailMail_AFifthOfAFolderIsNotWithheld(t *testing.T) {
 	f := newFixture(t)
 	for i := range 60 {
@@ -345,6 +353,7 @@ func TestGmailMail_AFifthOfAFolderIsNotWithheld(t *testing.T) {
 	assert.Equal(t, backup.Result{Files: 48, Deleted: 12}, res)
 }
 
+// Validates: PV-107
 func TestGmailMail_MovedMessagesAreNotDeletions(t *testing.T) {
 	f := newFixture(t)
 	for i := range 60 {
@@ -361,6 +370,7 @@ func TestGmailMail_MovedMessagesAreNotDeletions(t *testing.T) {
 	assert.Equal(t, backup.Result{Files: 60, Moved: 30}, res)
 }
 
+// Validates: PV-108
 func TestGmailMail_DryRunCountsAndWritesNothing(t *testing.T) {
 	f := newFixture(t)
 	f.srv.Add("m1", "one", "INBOX")
@@ -385,6 +395,7 @@ func TestGmailMail_DryRunCountsAndWritesNothing(t *testing.T) {
 	assert.Equal(t, backup.Result{Files: 4, Downloaded: 2, Moved: 1, Deleted: 1}, res, "the backup does what the dry run said")
 }
 
+// Validates: PV-108
 func TestGmailMail_DryRunSizeIsUnknownWhenALookupFails(t *testing.T) {
 	f := newFixture(t)
 	f.srv.Add("m1", "one", "INBOX")

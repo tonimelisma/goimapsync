@@ -10,6 +10,7 @@ import (
 
 // Every zone in the table must be one Go can load, or times would silently
 // fall back to UTC.
+// Validates: PV-179
 func TestEveryMappedZoneLoads(t *testing.T) {
 	loadOnce.Do(load)
 	require.Greater(t, len(toIANA), 100)

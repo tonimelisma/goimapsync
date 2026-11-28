@@ -28,6 +28,7 @@ func TestRegistry_MissingDirectoryIsEmpty(t *testing.T) {
 	assert.Empty(t, ids)
 }
 
+// Validates: PV-002, PV-223
 func TestRegistry_ListSortedAndIgnoresOtherFiles(t *testing.T) {
 	t.Parallel()
 
@@ -71,6 +72,7 @@ func TestRegistry_ListReportsBrokenFilesAndKeepsValidOnes(t *testing.T) {
 	assert.Contains(t, badNames.Error(), "token_yahoo_x@yahoo.example.com.json")
 }
 
+// Validates: PV-223
 func TestRegistry_Remove(t *testing.T) {
 	t.Parallel()
 

@@ -96,6 +96,7 @@ func pasteRun(t *testing.T, p *fakeProvider, redirect func(authURL *url.URL) str
 	return tok, authURL, err
 }
 
+// Validates: PV-220
 func TestPasteURL_ExchangesCodeWithPKCE(t *testing.T) {
 	t.Parallel()
 
@@ -138,6 +139,7 @@ func TestPasteURL_PassesExchangeOptions(t *testing.T) {
 	assert.Equal(t, "scope-a", p.lastTokenRequest().Get("scope"))
 }
 
+// Validates: PV-220
 func TestPasteURL_RejectsBadRedirects(t *testing.T) {
 	t.Parallel()
 
@@ -193,6 +195,7 @@ func TestPasteURL_ReadFailure(t *testing.T) {
 	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
 }
 
+// Validates: PV-235
 func TestTokenSource_SavesRefreshedToken(t *testing.T) {
 	t.Parallel()
 
@@ -220,6 +223,7 @@ func TestTokenSource_SavesRefreshedToken(t *testing.T) {
 	assert.Len(t, saved, 1)
 }
 
+// Validates: PV-235
 func TestTokenSource_ValidTokenIsNotSaved(t *testing.T) {
 	t.Parallel()
 
@@ -246,6 +250,8 @@ func TestTokenSource_ValidTokenIsNotSaved(t *testing.T) {
 // Requests of one account share its token source: a refresh several of them
 // wait for is saved once, and an older token is never saved after a newer
 // one.
+//
+// Validates: PV-235
 func TestTokenSource_ConcurrentUseSavesEachRefreshOnce(t *testing.T) {
 	t.Parallel()
 
@@ -292,6 +298,7 @@ func TestTokenSource_ConcurrentUseSavesEachRefreshOnce(t *testing.T) {
 	assert.Equal(t, "refresh-new", saved[0].RefreshToken)
 }
 
+// Validates: PV-235
 func TestTokenSource_SaveFailureStillReturnsToken(t *testing.T) {
 	t.Parallel()
 

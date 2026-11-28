@@ -1,5 +1,5 @@
 // Package e2e runs pimvault against the real test accounts
-// (docs/requirements.md D193, D202). The tests are behind the e2e build tag;
+// (D193, D202). The tests are behind the e2e build tag;
 // this file holds what they need to fetch and store the accounts' tokens.
 package e2e
 

@@ -3,7 +3,7 @@
 // Every directory is resolved in the same order: command-line flag, then
 // environment variable, then config.toml, then the XDG default. Resolution is
 // deterministic; only Load touches the filesystem. The tool never writes
-// config.toml; it holds only the owner's settings.
+// config.toml; it holds only the user's settings.
 package config
 
 import (

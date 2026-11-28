@@ -33,6 +33,7 @@ func TestRepaired_LeavesACompleteMessageAlone(t *testing.T) {
 	assert.False(t, fileDated)
 }
 
+// Validates: PV-154
 func TestRepaired_ReplacesAFoldedBadDate(t *testing.T) {
 	modified := time.Date(2026, 4, 1, 12, 0, 0, 0, time.FixedZone("EEST", 3*3600))
 
@@ -43,6 +44,7 @@ func TestRepaired_ReplacesAFoldedBadDate(t *testing.T) {
 	assert.Equal(t, "Date: Wed, 01 Apr 2026 09:00:00 +0000\r\nMessage-ID: <a@x>\r\nSubject: s\r\n\r\nhi\r\n", string(got))
 }
 
+// Validates: PV-154
 func TestRepaired_DerivedMessageIDIsStable(t *testing.T) {
 	raw := []byte("Date: Mon, 02 Mar 2026 10:00:00 +0000\r\n\r\nhi\r\n")
 
@@ -67,6 +69,7 @@ func TestRepaired_FailsWithoutAnyDate(t *testing.T) {
 	require.ErrorContains(t, err, "gone")
 }
 
+// Validates: PV-154
 func TestRepaired_ReplacesAnEmptyMessageID(t *testing.T) {
 	got, _, err := repaired([]byte("Date: Mon, 02 Mar 2026 10:00:00 +0000\r\nMessage-ID:\r\n  \r\nSubject: s\r\n\r\nhi\r\n"), nil)
 	require.NoError(t, err)

@@ -118,6 +118,7 @@ func (h *harness) exec(t *testing.T, args ...string) (code int, stdout, stderr s
 
 // A fresh backup verifies clean and restores into each account as a no-op:
 // backup, verify and restore's duplicate checks agree with the providers.
+// Validates: PV-001, PV-151
 func TestLive_BackupVerifyRestore(t *testing.T) {
 	h := signIn(t, store(t))
 

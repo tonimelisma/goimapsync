@@ -15,12 +15,14 @@ import (
 	"github.com/tonimelisma/pimvault/internal/archive"
 )
 
+// Validates: PV-052
 func TestAccountDir(t *testing.T) {
 	id, err := account.Parse("gmail:User@Gmail.Example.com")
 	require.NoError(t, err)
 	assert.Equal(t, "/a/gmail_user@gmail.example.com", archive.AccountDir("/a", id))
 }
 
+// Validates: PV-052
 func TestAccounts(t *testing.T) {
 	root := t.TempDir()
 	elsewhere := t.TempDir()
@@ -46,6 +48,7 @@ func TestAccounts(t *testing.T) {
 	assert.Empty(t, ids)
 }
 
+// Validates: PV-051, PV-060
 func TestFolderPath(t *testing.T) {
 	cases := map[string]struct {
 		segments []string
@@ -74,6 +77,7 @@ func TestFolderPath(t *testing.T) {
 	}
 }
 
+// Validates: PV-060
 func TestFolderPath_OtherSystemFolders(t *testing.T) {
 	assert.Equal(t, "%43alendar", archive.FolderPath([]string{"Calendar"}, []string{archive.Calendar}))
 	// Whatever the case: on many filesystems it is the same directory (D178).
@@ -81,6 +85,7 @@ func TestFolderPath_OtherSystemFolders(t *testing.T) {
 	assert.Equal(t, "Inbox", archive.FolderPath([]string{"Inbox"}, []string{archive.Calendar}))
 }
 
+// Validates: PV-056
 func TestUnique(t *testing.T) {
 	assert.Equal(t, map[string]string{
 		"a": "Work", "b": "Work (2)", "c": "Work (3)", "d": "Home",
@@ -113,6 +118,7 @@ func TestSubfolder(t *testing.T) {
 	assert.Equal(t, filepath.FromSlash("Work/..%2F..%2Fetc"), archive.Subfolder("Work", "../../etc"))
 }
 
+// Validates: PV-055
 func TestValidID(t *testing.T) {
 	assert.True(t, archive.ValidID("18c2f9a0b1d2e3f4"))
 	assert.True(t, archive.ValidID("AAMk-_="))
@@ -129,6 +135,7 @@ func TestValidID(t *testing.T) {
 
 // IDs that differ only in case get names that differ in more than case,
 // so a case-insensitive filesystem keeps both (D178).
+// Validates: PV-055
 func TestStore_IDsDifferingInCaseStayApart(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "mail")
 	store := archive.NewStore(root, ".eml")
@@ -167,6 +174,7 @@ func TestStore_IDsDifferingInCaseStayApart(t *testing.T) {
 	assert.Len(t, items, 3)
 }
 
+// Validates: PV-053
 func TestStore_WriteScanMoveRemove(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "mail")
 	store := archive.NewStore(root, ".eml")
@@ -207,6 +215,7 @@ func TestStore_WriteScanMoveRemove(t *testing.T) {
 	assert.Equal(t, "one", string(data))
 }
 
+// Validates: PV-065
 func TestStore_FilePermissions(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "mail")
 	store := archive.NewStore(root, ".eml")
@@ -270,6 +279,7 @@ func TestFolderSegments_ReversesFolderPath(t *testing.T) {
 	assert.Equal(t, []string{"Work (2)"}, archive.FolderSegments("Work (2)"))
 }
 
+// Validates: PV-106
 func TestStore_DiscardKeepsTheFileAside(t *testing.T) {
 	dir := t.TempDir()
 	id, err := account.Parse("gmail:user@gmail.example.com")
@@ -294,6 +304,7 @@ func TestStore_DiscardKeepsTheFileAside(t *testing.T) {
 	require.Error(t, archive.NewStore(dir, ".eml").Discard("Inbox", "x"), "a store with nowhere to keep files refuses")
 }
 
+// Validates: PV-106
 func TestPruneKeptAside(t *testing.T) {
 	dir := t.TempDir()
 	base := filepath.Join(dir, ".deleted", "gmail_user@gmail.example.com")
@@ -320,6 +331,7 @@ func TestPruneKeptAside(t *testing.T) {
 	require.NoError(t, archive.PruneKeptAside(t.TempDir(), now), "nothing kept aside yet")
 }
 
+// Validates: PV-062
 func TestStore_LongFolderNamesAreCutOnDisk(t *testing.T) {
 	root, aside := t.TempDir(), t.TempDir()
 	store := archive.NewStore(root, ".eml").KeepingAside(aside)

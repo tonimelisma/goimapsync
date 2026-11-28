@@ -1,6 +1,5 @@
 // Package httpretry retries HTTP requests on throttling and transient server
-// or network failures, honoring the provider's Retry-After (docs/requirements.md
-// D69).
+// or network failures, honoring the provider's Retry-After (D69).
 //
 // Adapted from github.com/tonimelisma/onedrive-go (internal/retry): the
 // transport loop, backoff policy and Retry-After handling, without the perf

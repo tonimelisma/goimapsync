@@ -19,6 +19,7 @@ func envOf(vars map[string]string) Env {
 	}
 }
 
+// Validates: PV-225
 func TestConfigFilePath(t *testing.T) {
 	t.Parallel()
 
@@ -47,6 +48,7 @@ func TestConfigFilePath(t *testing.T) {
 	}
 }
 
+// Validates: PV-104, PV-225
 func TestResolve_Precedence(t *testing.T) {
 	t.Parallel()
 
@@ -105,6 +107,7 @@ func TestResolve_Precedence(t *testing.T) {
 	}
 }
 
+// Validates: PV-227
 func TestResolve_RelativeFlagIsMadeAbsolute(t *testing.T) {
 	t.Parallel()
 
@@ -116,6 +119,7 @@ func TestResolve_RelativeFlagIsMadeAbsolute(t *testing.T) {
 	assert.Equal(t, filepath.Join(wd, "archive"), paths.Archive)
 }
 
+// Validates: PV-227
 func TestResolve_RelativeConfigValueRejected(t *testing.T) {
 	t.Parallel()
 
@@ -126,6 +130,7 @@ func TestResolve_RelativeConfigValueRejected(t *testing.T) {
 	}
 }
 
+// Validates: PV-227
 func TestResolve_TildeConfigValueUsesHome(t *testing.T) {
 	t.Parallel()
 
@@ -161,6 +166,7 @@ func writeConfig(t *testing.T, content string) string {
 	return path
 }
 
+// Validates: PV-228
 func TestLoad_MissingFileUsesDefaults(t *testing.T) {
 	t.Parallel()
 
@@ -169,6 +175,7 @@ func TestLoad_MissingFileUsesDefaults(t *testing.T) {
 	assert.Equal(t, File{}, file)
 }
 
+// Validates: PV-228
 func TestLoad_MissingExplicitFileIsAnError(t *testing.T) {
 	t.Parallel()
 
@@ -177,6 +184,7 @@ func TestLoad_MissingExplicitFileIsAnError(t *testing.T) {
 	require.ErrorIs(t, err, os.ErrNotExist)
 }
 
+// Validates: PV-226
 func TestLoad_ValidFile(t *testing.T) {
 	t.Parallel()
 
@@ -185,6 +193,7 @@ func TestLoad_ValidFile(t *testing.T) {
 	assert.Equal(t, File{Archive: "/srv/pimvault", State: "/var/lib/pimvault"}, file)
 }
 
+// Validates: PV-226
 func TestLoad_UnknownKeyIsAnError(t *testing.T) {
 	t.Parallel()
 

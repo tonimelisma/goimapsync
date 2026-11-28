@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Validates: PV-180
 func TestReadSeries_PinsFloatingTimes(t *testing.T) {
 	raw := []byte("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:test\r\n" +
 		// Floating series: pinned to the zone; its UNTIL becomes UTC.

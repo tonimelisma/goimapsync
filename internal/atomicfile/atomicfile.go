@@ -1,5 +1,5 @@
 // Package atomicfile writes files so that a crash leaves either the old file
-// or the new one, never a partial file (docs/requirements.md D54). Temp files
+// or the new one, never a partial file (D54). Temp files
 // carry a fixed name pattern so an interrupted run's leftovers can be found
 // and removed (D58).
 package atomicfile

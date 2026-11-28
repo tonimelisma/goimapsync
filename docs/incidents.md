@@ -40,12 +40,12 @@ happened, the impact, the cause, the fix and what keeps it from coming back.
 - **Fix:** pimvault names the setting (D175).
 - **Prevention:** the fake IMAP server answers like Outlook.com with IMAP off.
 
-## 2026-10-25: a test sign-in picked the owner's own account
+## 2026-10-25: a test sign-in picked the maintainer's own account
 
-- **What:** `pimvault login outlook` signed in the owner's own Microsoft
+- **What:** `pimvault login outlook` signed in the maintainer's own Microsoft
   account, because the browser already had its session.
 - **Impact:** none: the following migrate refused to run because the test
-  account was not signed in, and the owner's sign-in was removed at once.
+  account was not signed in, and that sign-in was removed at once.
 - **Cause:** a browser with several Microsoft sessions picks the active one.
 - **Fix:** instructions for test sign-ins say to use a private window and
   check the `signed in as` line.

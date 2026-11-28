@@ -1,5 +1,5 @@
 // Package restore writes an account's archive into an account: the same one
-// (restore) or another (migrate) (docs/requirements.md D12–D14, D76). Every
+// (restore) or another (migrate) (D12–D14, D76). Every
 // run merges into what the target has and skips items it already has
 // (D60), so an interrupted run is resumed by running it again.
 package restore

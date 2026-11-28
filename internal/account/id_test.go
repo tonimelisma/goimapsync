@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Validates: PV-222
 func TestParse(t *testing.T) {
 	t.Parallel()
 
@@ -47,6 +48,7 @@ func TestParse(t *testing.T) {
 	}
 }
 
+// Validates: PV-052
 func TestDirNameRoundTrip(t *testing.T) {
 	t.Parallel()
 
@@ -58,6 +60,7 @@ func TestDirNameRoundTrip(t *testing.T) {
 	assert.Equal(t, id, back)
 }
 
+// Validates: PV-222
 func TestMatch(t *testing.T) {
 	t.Parallel()
 
@@ -99,6 +102,7 @@ func TestMatch(t *testing.T) {
 	}
 }
 
+// Validates: PV-222
 func TestMatch_AmbiguousErrorListsCandidates(t *testing.T) {
 	t.Parallel()
 

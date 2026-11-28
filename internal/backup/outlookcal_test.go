@@ -34,6 +34,7 @@ func outlookEvent(id, subject string) graph.Event {
 	}
 }
 
+// Validates: PV-006, PV-007, PV-011, PV-102
 func TestOutlookCalendars(t *testing.T) {
 	srv := graphtest.New(t)
 	defaultCal := outlookCalendar("cal-default", "Calendar", true)

@@ -131,6 +131,7 @@ func summaryLine(kind string) *regexp.Regexp {
 // the Gmail test account twice: the first run writes what the account does
 // not have, the second finds all of it (D184, D185). Outlook.com is not
 // covered yet.
+// Validates: PV-154
 func TestLive_HostileMailConverges(t *testing.T) {
 	h := signIn(t, store(t))
 

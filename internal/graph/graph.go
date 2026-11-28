@@ -1,5 +1,5 @@
 // Package graph reads Outlook.com through Microsoft Graph as plain REST
-// (docs/requirements.md D47, D85). Items are addressed by immutable IDs, which
+// (D47, D85). Items are addressed by immutable IDs, which
 // stay the same when an item moves between folders.
 package graph
 

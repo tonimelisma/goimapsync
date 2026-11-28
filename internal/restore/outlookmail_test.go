@@ -24,6 +24,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/restore"
 )
 
+// Validates: PV-152, PV-163, PV-165, PV-171
 func TestOutlookMail_Restore(t *testing.T) {
 	srv := graphtest.New(t)
 	srv.Add("m-existing", "f-inbox", string(eml("<a@x>", date, "Ann <ann@example.com>", "a")))
@@ -193,6 +194,7 @@ func openMailbox(mailbox *outlookimaptest.Server) func(ctx context.Context) (*ou
 	}
 }
 
+// Validates: PV-164, PV-172
 func TestOutlookMail_MessageOverOutlookLimitIsSkipped(t *testing.T) {
 	// Outlook.com answers "BAD Command Argument Error. 11" just above its
 	// limit (F74).
@@ -215,6 +217,7 @@ func TestOutlookMail_MessageOverOutlookLimitIsSkipped(t *testing.T) {
 	assert.Contains(t, mailbox.Appended()[0].Raw, "<b@x>")
 }
 
+// Validates: PV-111
 func TestOutlookMail_ThrottlingIsWaitedOut(t *testing.T) {
 	mailbox := outlookimaptest.New(t, "me@outlook.example.com", "imap-token")
 	mailbox.Throttle(2)
@@ -268,6 +271,7 @@ func TestOutlookMail_LastingThrottlingStopsTheRun(t *testing.T) {
 	assert.Empty(t, mailbox.Appended())
 }
 
+// Validates: PV-169
 func TestOutlookMail_OutlookFolderNamesAreRenamed(t *testing.T) {
 	srv := graphtest.New(t)
 	srv.AddFolder("f-snoozed", "Snoozed", "")

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Everything CI checks, in one command; run it before every push.
+# script/check.sh: tidy, format, lint, build, vet, race tests (needs Go from
+# go.mod and the pinned golangci-lint, as the session-start hook installs);
+# script/process_check_test.sh: process-check's alias handling; script/process-check:
+# requirements, Validates tags, aliases and doc links agree.
+set -eu
+cd "$(dirname "$0")/.."
+script/check.sh
+script/process_check_test.sh
+script/process-check

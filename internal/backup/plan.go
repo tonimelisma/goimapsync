@@ -1,6 +1,6 @@
 // Package backup brings the archive in line with an account: it finds out
 // where each item should be, compares that with the archive, and downloads,
-// moves and deletes files to match (docs/requirements.md D11, D35, D44).
+// moves and deletes files to match (D11, D35, D44).
 package backup
 
 import (
