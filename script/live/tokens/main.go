@@ -1,7 +1,7 @@
 // Command tokens signs pimvault in as the throwaway test accounts for live
 // probes: it reads their tokens from Azure Key Vault (D202), with the
-// access token e2e.FromEnv reads (the owner's az token on the owner's Mac,
-// the workflow's Entra ID token in GitHub Actions), into a fresh
+// access token e2e.FromEnv reads (the session-start hook's token in a cloud
+// session, the workflow's Entra ID token in GitHub Actions), into a fresh
 // XDG_CONFIG_HOME, and prints the account IDs, never the tokens.
 //
 //	go run ./script/live/tokens -out DIR
