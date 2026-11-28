@@ -24,7 +24,7 @@ import (
 // logFormatText is the default log format.
 const logFormatText = "text"
 
-// Exit codes (docs/requirements.md D93).
+// Exit codes (D93).
 const (
 	ExitOK         = 0
 	ExitError      = 1

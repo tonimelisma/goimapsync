@@ -11,6 +11,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/account"
 )
 
+// Validates: PV-120, PV-224
 func TestVerify_MatchesThenDiffers(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -45,6 +46,7 @@ func TestVerify_MatchesThenDiffers(t *testing.T) {
 		"gmail:user@gmail.example.com: 7 checked, 1 different, 1 unreadable\n", stdout)
 }
 
+// Validates: PV-121
 func TestVerify_FilesAreReadWhenTheAccountCannotBe(t *testing.T) {
 	env := newTestEnv(t)
 	env.addAccount(t, "gmail:user@gmail.example.com")

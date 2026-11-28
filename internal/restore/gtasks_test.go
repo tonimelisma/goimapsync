@@ -16,6 +16,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/restore"
 )
 
+// Validates: PV-158, PV-170, PV-184
 func TestGoogleTasks_Restore(t *testing.T) {
 	srv := gtaskstest.New(t)
 	srv.AddList(gtasks.List{ID: "l-default", Title: "My Tasks"})
@@ -67,6 +68,7 @@ func TestGoogleTasks_Restore(t *testing.T) {
 	assert.Equal(t, restore.Result{Present: 2}, res)
 }
 
+// Validates: PV-183
 func TestGoogleTasks_SubtasksKeepOrderAndFailedTaskIsRetriedWhole(t *testing.T) {
 	srv := gtaskstest.New(t)
 	srv.AddList(gtasks.List{ID: "l-default", Title: "My Tasks"})

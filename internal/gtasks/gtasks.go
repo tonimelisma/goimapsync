@@ -1,5 +1,5 @@
-// Package gtasks reads Google Tasks through its REST API (docs/requirements.md
-// D23, D140) and renders tasks as iCalendar VTODOs (D25, D150).
+// Package gtasks reads Google Tasks through its REST API (D23, D140) and
+// renders tasks as iCalendar VTODOs (D25, D150).
 package gtasks
 
 import (

@@ -1,8 +1,8 @@
 # Restore edge cases in other tools (2026-10-25)
 
 How comparable tools handle the restore cases in plan 003, plus live checks
-on the Gmail test account. Facts only; decisions live in
-`docs/requirements.md`.
+on the Gmail test account. Facts only; decisions live in the requirements and ADRs
+(`docs/requirements.md`, `docs/adr/`).
 
 ## Mail already there
 

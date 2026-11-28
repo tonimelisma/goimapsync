@@ -64,6 +64,7 @@ const full = `{
                   {"contactGroupMembership": {"contactGroupResourceName": "contactGroups/myContacts"}}]
 }`
 
+// Validates: PV-013
 func TestEncode_Full(t *testing.T) {
 	groups := map[string]string{"contactGroups/family": "Family, close", "contactGroups/work": "Work"}
 	photo := &gpeople.Photo{Data: []byte("jpeg-bytes"), ContentType: "image/jpeg"}

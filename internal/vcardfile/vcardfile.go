@@ -1,7 +1,7 @@
-// Package vcardfile writes vCard 4.0 files (RFC 6350, docs/requirements.md
-// D42). go-vcard (D88) parses them; its encoder is not used because it
-// escapes commas in URI values (breaking data: photos) and cannot escape
-// semicolons inside structured values.
+// Package vcardfile writes vCard 4.0 files (RFC 6350, D42). go-vcard (D88)
+// parses them; its encoder is not used because it escapes commas in URI
+// values (breaking data: photos) and cannot escape semicolons inside
+// structured values.
 package vcardfile
 
 import (

@@ -1,21 +1,29 @@
 name: Release
 
-# Publishes a release after every merge to main (D198): when the CI run of a
-# push to main succeeds and its commit is still main's head, it checks that
-# commit, tags it with the next patch version, builds it with script/release.sh and uploads the binaries,
-# SHA256SUMS and a signed build provenance attestation (D197). The build is
-# reproducible and uses no cache, and the job holds no secret beyond
-# GITHUB_TOKEN. Only this workflow, run on main, publishes or attests
-# releases; consumers verify with --signer-workflow and --source-ref
-# refs/heads/main. Nothing runs on tag pushes. A run for a commit main has
-# moved past releases nothing: the newer commit's run releases it, so one
-# release can hold several merges, and the attestation's source commit
-# (GITHUB_SHA) is always the commit built.
+# Publishes a release after every merge to main (ADR 0020, PV-270): when the
+# CI run of a push to main succeeds and its commit is still main's head, it
+# checks that commit, tags it with the next patch version of the series named
+# in VERSION (major.minor), builds it with script/release.sh, uploads the
+# binaries, SHA256SUMS and a signed build provenance attestation, and verifies
+# the published release. The build is reproducible and uses no cache, and the
+# job holds no secret beyond GITHUB_TOKEN. Only this workflow, run on main,
+# publishes or attests releases; consumers verify with --signer-workflow and
+# --source-ref refs/heads/main, so this file's path and the main ref stay as
+# they are. Nothing runs on tag pushes. A run for a commit main has moved past
+# releases nothing: the newer commit's run releases it, so one release can
+# hold several merges, and the attestation's source commit (GITHUB_SHA) is
+# always the commit built. Scheduled and pull request runs of CI never
+# release.
+#
+# A new minor or major series starts by editing VERSION in a PR (say 0.2):
+# its first release is v0.2.0. A series below the highest existing tag is
+# refused.
 #
 # A manual run (workflow_dispatch on main only) releases main's head, as the
 # given version or the next patch version. A version must be higher than
-# every existing tag and v0.1.2 (D196). Running it again for a tagged commit
-# or an existing tag only finishes that release; it never moves a tag.
+# every existing tag and v0.1.2, the last release before the repository was
+# recreated. Running it again for a tagged commit or an existing tag only
+# finishes that release; it never moves a tag.
 on:
   workflow_run:
     workflows: [CI]
@@ -119,8 +127,18 @@ jobs:
               echo "new=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            IFS=. read -r major minor patch <<<"${highest#v}"
-            version="v$major.$minor.$((patch + 1))"
+            # The next patch of the series VERSION names, or its .0.
+            series=$(tr -d '[:space:]' < VERSION)
+            if [[ ! "$series" =~ ^[0-9]+\.[0-9]+$ ]]; then
+              echo "release: VERSION must hold a series like 0.1, not '$series'" >&2
+              exit 1
+            fi
+            last=$({ echo v0.1.2; printf '%s\n' "$tags"; } | grep -E "^v${series//./\\.}\.[0-9]+$" | sort -V | tail -n 1 || true)
+            if [[ -n "$last" ]]; then
+              version="v$series.$((${last##*.} + 1))"
+            else
+              version="v$series.0"
+            fi
           fi
           if [[ "$(printf '%s\n%s\n' "$highest" "$version" | sort -V | tail -n 1)" != "$version" || "$version" == "$highest" ]]; then
             echo "release: $version is not higher than $highest" >&2
@@ -204,3 +222,25 @@ jobs:
             gh api -X PATCH "$api/$id" -F draft=false >/dev/null
           fi
           echo "release: $VERSION is published"
+
+      # Validates: PV-270 (on every release: checksums, attestation identity, latest)
+      - name: Verify the published release
+        if: steps.plan.outputs.skip != 'true'
+        env:
+          WORKFLOW: ${{ github.repository }}/.github/workflows/release.yml
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/check" && cd "$RUNNER_TEMP/check"
+          for arch in amd64 arm64; do
+            gh release download "$VERSION" -R "$GITHUB_REPOSITORY" \
+              --pattern "pimvault-$VERSION-linux-$arch" --pattern SHA256SUMS --clobber
+            gh attestation verify "pimvault-$VERSION-linux-$arch" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$WORKFLOW" --source-ref refs/heads/main
+          done
+          sha256sum --check --strict SHA256SUMS
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
+          if [[ "$latest" != "$VERSION" && "$(printf '%s\n%s\n' "$latest" "$VERSION" | sort -V | tail -n 1)" == "$VERSION" ]]; then
+            echo "::error::releases/latest is $latest, not $VERSION"
+            exit 1
+          fi
+          echo "release: $VERSION verified (checksums, attestation by $WORKFLOW on main)"

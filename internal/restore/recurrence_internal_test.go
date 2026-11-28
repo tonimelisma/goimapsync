@@ -10,6 +10,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/graph"
 )
 
+// Validates: PV-177
 func TestGraphRecurrence(t *testing.T) {
 	start := time.Date(2026, 10, 2, 0, 0, 0, 0, time.UTC) // a Friday
 	noEnd := graph.RecurrenceRange{Type: "noEnd", StartDate: "2026-10-02"}

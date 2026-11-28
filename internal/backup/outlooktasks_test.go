@@ -70,6 +70,7 @@ func todoTask(id, title string) graph.Task {
 	}
 }
 
+// Validates: PV-010, PV-011, PV-050, PV-061
 func TestOutlookTasks_FirstBackup(t *testing.T) {
 	f := newOutlookTasksFixture(t)
 	f.srv.PageSize = 1
@@ -125,6 +126,7 @@ func TestOutlookTasks_FirstBackup(t *testing.T) {
 	assert.Contains(t, taxes, "COMPLETED:20260905T000000Z\r\n")
 }
 
+// Validates: PV-102
 func TestOutlookTasks_Changes(t *testing.T) {
 	f := newOutlookTasksFixture(t)
 	task := todoTask("t1", "Water plants")

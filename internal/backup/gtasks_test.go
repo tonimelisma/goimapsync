@@ -17,6 +17,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/state"
 )
 
+// Validates: PV-010, PV-102
 func TestGoogleTasks(t *testing.T) {
 	srv := gtaskstest.New(t)
 	srv.PageSize = 1

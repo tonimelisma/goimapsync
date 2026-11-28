@@ -21,7 +21,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/oauthflow"
 )
 
-// Client IDs of pimvault's own apps (docs/requirements.md D75, D136):
+// Client IDs of pimvault's own apps (D75, D136):
 // pimvault's Google Cloud project and its Entra app for personal Microsoft
 // accounts. config.toml can override them. Google treats
 // a desktop app's client secret as non-confidential.

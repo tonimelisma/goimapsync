@@ -80,6 +80,7 @@ func TestLoad_RejectsMalformedFiles(t *testing.T) {
 	}
 }
 
+// Validates: PV-065, PV-229
 func TestSave_CreatesDirectoryWithOwnerOnlyPermissions(t *testing.T) {
 	t.Parallel()
 
@@ -95,6 +96,7 @@ func TestSave_CreatesDirectoryWithOwnerOnlyPermissions(t *testing.T) {
 	assert.Equal(t, os.FileMode(DirPerms), dirInfo.Mode().Perm())
 }
 
+// Validates: PV-063
 func TestSave_LeavesNoTempFiles(t *testing.T) {
 	t.Parallel()
 
@@ -160,6 +162,7 @@ func TestSave_NilToken(t *testing.T) {
 	assert.Contains(t, err.Error(), "refusing to save nil token")
 }
 
+// Validates: PV-229
 func TestSave_WritesOnlyTheTokenKey(t *testing.T) {
 	t.Parallel()
 

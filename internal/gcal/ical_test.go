@@ -37,6 +37,7 @@ func calendar() *gcal.Calendar {
 	}
 }
 
+// Validates: PV-013
 func TestEncode_TimedEventWithGuests(t *testing.T) {
 	e := gcal.Event{
 		ID:          "abc123",
@@ -89,6 +90,7 @@ func TestEncode_AllDayWithDefaultReminders(t *testing.T) {
 	golden(t, "allday", got)
 }
 
+// Validates: PV-054
 func TestEncode_RecurringWithExceptions(t *testing.T) {
 	master := gcal.Event{
 		ID:         "rec1",
@@ -124,6 +126,7 @@ func TestEncode_RecurringWithExceptions(t *testing.T) {
 	assert.Equal(t, "rec1", moved.SeriesID())
 }
 
+// Validates: PV-011
 func TestEncode_NothingToStore(t *testing.T) {
 	cases := map[string][]gcal.Event{
 		"deleted event":     {{ID: "x", Status: "cancelled"}},
@@ -159,6 +162,7 @@ func TestEncode_InstanceWithoutItsSeries(t *testing.T) {
 	golden(t, "instance", got)
 }
 
+// Validates: PV-179
 func TestEncode_UnknownZoneFallsBackToUTC(t *testing.T) {
 	e := gcal.Event{
 		ID: "z", ICalUID: "z@google.com", Status: "confirmed", Updated: "2026-01-01T00:00:00Z",
@@ -170,6 +174,7 @@ func TestEncode_UnknownZoneFallsBackToUTC(t *testing.T) {
 	assert.Contains(t, string(got), "DTSTART:20260301T100000Z\r\n")
 }
 
+// Validates: PV-013, PV-050
 func TestGoldenFilesParse(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join("testdata", "*.ics"))
 	require.NoError(t, err)
@@ -193,6 +198,7 @@ func contactBirthday() gcal.Event {
 	return e
 }
 
+// Validates: PV-011
 func TestEncode_OwnBirthdayIsKept(t *testing.T) {
 	e := gcal.Event{
 		ID: "self", ICalUID: "self@google.com", Status: "confirmed", EventType: "birthday", Summary: "My birthday",

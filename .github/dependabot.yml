@@ -1,7 +1,19 @@
-# Weekly dependency updates for Go modules and pinned GitHub Actions.
+# Weekly update proposals, one grouped pull request per ecosystem. Security updates open right
+# away regardless. Keep one entry per ecosystem the repository uses; actions are pinned by commit
+# SHA with a `# vX.Y.Z` comment, which Dependabot keeps up to date.
 version: 2
-
 updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+    groups:
+      actions:
+        patterns: ["*"]
+  # Example for a Go module; others (swift, npm, pip, docker, ...) look the same.
   - package-ecosystem: gomod
     directory: /
     schedule:
@@ -9,17 +21,6 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore
-      include: scope
     groups:
-      golang-x:
-        patterns:
-          - golang.org/x/*
-
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: ci
-      include: scope
+      go-modules:
+        patterns: ["*"]

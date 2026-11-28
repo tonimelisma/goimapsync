@@ -76,6 +76,7 @@ func timed(id, summary, day string) gcal.Event {
 	}
 }
 
+// Validates: PV-006, PV-007, PV-011, PV-056, PV-061
 func TestGoogleCalendars_FirstBackup(t *testing.T) {
 	f := newGcalFixture(t)
 	f.srv.AddCalendar(gcal.Calendar{ID: "work@group", Summary: "Work", DataOwner: "user@gmail.example.com"}, "owner")
@@ -99,6 +100,7 @@ func TestGoogleCalendars_FirstBackup(t *testing.T) {
 	assert.Contains(t, f.read(t, "Calendar/e1.ics"), "SUMMARY:Dentist\r\n")
 }
 
+// Validates: PV-054, PV-102
 func TestGoogleCalendars_SeriesChangesRewriteOneFile(t *testing.T) {
 	f := newGcalFixture(t)
 	master := timed("rec", "Weekly", "2026-01-05")
@@ -128,6 +130,7 @@ func TestGoogleCalendars_SeriesChangesRewriteOneFile(t *testing.T) {
 	assert.Empty(t, listFiles(t, f.root))
 }
 
+// Validates: PV-103
 func TestGoogleCalendars_ExpiredTokenAndRename(t *testing.T) {
 	f := newGcalFixture(t)
 	f.srv.AddCalendar(gcal.Calendar{ID: "work@group", Summary: "Work", DataOwner: "user@gmail.example.com"}, "owner")

@@ -1,5 +1,5 @@
 // Package outlookimap appends messages to an Outlook.com mailbox over IMAP
-// (docs/requirements.md D56, D84). Graph cannot create received mail; IMAP
+// (D56, D84). Graph cannot create received mail; IMAP
 // APPEND can. Nothing else uses IMAP.
 package outlookimap
 

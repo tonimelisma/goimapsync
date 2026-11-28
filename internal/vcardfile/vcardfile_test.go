@@ -12,6 +12,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/vcardfile"
 )
 
+// Validates: PV-050
 func TestEncode_EscapingAndRoundTrip(t *testing.T) {
 	c := vcardfile.New("people/c1")
 	c.SetText("FN", "Ann; B, \\ C")

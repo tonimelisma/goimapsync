@@ -56,6 +56,7 @@ SUMMARY:Weekly sync (moved)
 END:VEVENT
 `
 
+// Validates: PV-161, PV-170, PV-173, PV-174
 func TestGoogleCalendar_Restore(t *testing.T) {
 	srv := gcaltest.New(t)
 	srv.Owner = "me@gmail.example.com"
@@ -125,6 +126,7 @@ END:VEVENT
 	assert.Equal(t, restore.Result{Present: 3}, res)
 }
 
+// Validates: PV-180
 func TestGoogleCalendar_FloatingTimesTakeTheCalendarsZone(t *testing.T) {
 	srv := gcaltest.New(t)
 	srv.AddCalendar(gcal.Calendar{ID: "me@gmail.example.com", Primary: true, TimeZone: "America/New_York"}, "owner")

@@ -13,6 +13,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/googleapi"
 )
 
+// Validates: PV-003
 func TestMessageIDs_FollowsPagesAndFiltersByLabel(t *testing.T) {
 	srv := gmailtest.New(t)
 	srv.PageSize = 2
@@ -116,6 +117,7 @@ func TestAPIError(t *testing.T) {
 	assert.Contains(t, err.Error(), "get message m1")
 }
 
+// Validates: PV-057, PV-058
 func TestFolder(t *testing.T) {
 	labels := map[string]string{"L1": "Work/Projects", "L2": "Alpha", "L3": "[Gmail]/All Mail", "L4": "Archive", "L5": "Inbox/Old"}
 

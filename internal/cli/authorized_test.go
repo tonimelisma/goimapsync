@@ -49,6 +49,7 @@ func (t *throttleOnce) RoundTrip(req *http.Request) (*http.Response, error) {
 // A retry asks the token source again, so a token that expired during the
 // wait is not sent: Gmail answers an expired token with 401, and the item
 // failed (seen hourly on a long first backup, 2026-10-31).
+// Validates: PV-235
 func TestAuthorizedRetryGetsFreshToken(t *testing.T) {
 	t.Parallel()
 
@@ -86,6 +87,7 @@ func (s *failingSource) Token() (*oauth2.Token, error) {
 // A refused refresh is final: retrying it would cost every remaining item
 // several token requests and backoffs before the run reports the sign-in.
 // A token endpoint that fails or throttles is retried.
+// Validates: PV-233
 func TestAuthorizedRefusedRefresh(t *testing.T) {
 	t.Parallel()
 

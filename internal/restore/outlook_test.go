@@ -16,6 +16,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/vcardfile"
 )
 
+// Validates: PV-157, PV-158, PV-181, PV-182
 func TestOutlookContacts_Restore(t *testing.T) {
 	srv := graphtest.New(t)
 	srv.PutContact(graph.DefaultContactFolder, graph.Contact{
@@ -105,6 +106,7 @@ func TestOutlookContacts_Restore(t *testing.T) {
 	assert.Equal(t, restore.Result{Present: 3}, res)
 }
 
+// Validates: PV-159
 func TestOutlookContacts_IdenticalContactIsAlreadyThere(t *testing.T) {
 	// Outlook.com deletes a new contact identical to one it has (F67): one
 	// the account has without an archive ID counts as already there (D176).
@@ -157,6 +159,7 @@ func TestOutlookContacts_IdenticalContactIsAlreadyThere(t *testing.T) {
 	assert.Len(t, srv.WrittenContacts(), 3)
 }
 
+// Validates: PV-160
 func TestOutlookContacts_ContactOutlookMovedOutIsAlreadyThere(t *testing.T) {
 	srv := graphtest.New(t)
 	source := archive.NewStore(filepath.Join(t.TempDir(), "contacts"), ".vcf")

@@ -1,5 +1,5 @@
 # Adapted from tonimelisma/onedrive-go. Linters enforce the standard Go rules,
-# so AGENTS.md does not repeat them.
+# so CLAUDE.md does not repeat them.
 version: "2"
 
 run:
@@ -70,8 +70,8 @@ linters:
       disable:
         - fieldalignment
 
-    # Dependencies are an owner decision (docs/requirements.md D84, D85, D87,
-    # D88, D90, D120, D121). Add a module here only after the owner approves it.
+    # Dependencies are the maintainer's decision (docs/adr/0003). Add a module
+    # here only after the maintainer approves it.
     depguard:
       rules:
         main:

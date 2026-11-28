@@ -1,7 +1,7 @@
 // Package wintz translates Windows time zone names, which Outlook uses, to
-// IANA names with the Unicode CLDR windowsZones table (docs/requirements.md
-// D64). The table is embedded unchanged from
-// github.com/unicode-org/cldr, common/supplemental/windowsZones.xml.
+// IANA names with the Unicode CLDR windowsZones table (D64). The table is
+// embedded unchanged from github.com/unicode-org/cldr,
+// common/supplemental/windowsZones.xml.
 package wintz
 
 import (

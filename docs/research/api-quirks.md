@@ -3,7 +3,7 @@
 An index of every provider behaviour pimvault depends on or works around,
 grouped by API. The facts and their evidence are the F-rows in
 `2026-09-26-initial-research.md` and the dated notes next to it; this file
-only says where to look and how each quirk is handled. AGENTS.md says when
+only says where to look and how each quirk is handled. CLAUDE.md says when
 to add to it.
 
 Status: **handled** (with the decision or code that handles it), **open**

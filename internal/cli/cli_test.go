@@ -90,6 +90,7 @@ func (e *testEnv) run(t *testing.T, args ...string) (code int, stdout, stderr st
 	return code, out.String(), errOut.String()
 }
 
+// Validates: PV-224
 func TestAccountList_Empty(t *testing.T) {
 	t.Parallel()
 
@@ -99,6 +100,7 @@ func TestAccountList_Empty(t *testing.T) {
 	assert.Empty(t, stderr)
 }
 
+// Validates: PV-223
 func TestAccountList_PrintsSortedIDs(t *testing.T) {
 	t.Parallel()
 
@@ -126,6 +128,7 @@ func TestAccountList_BrokenTokenFileFailsButListsValidOnes(t *testing.T) {
 	assert.Contains(t, stderr, "sign-in needed")
 }
 
+// Validates: PV-222
 func TestAccountRemove_BySubstring(t *testing.T) {
 	t.Parallel()
 
@@ -168,6 +171,7 @@ func TestAccountRemove_AmbiguousListsCandidates(t *testing.T) {
 	assert.Contains(t, stderr, "gmail:user@gmail.example.com, outlook:user@outlook.example.com")
 }
 
+// Validates: PV-223
 func TestAccountRemove_KeepsArchiveAndState(t *testing.T) {
 	t.Parallel()
 
@@ -187,6 +191,7 @@ func TestAccountRemove_KeepsArchiveAndState(t *testing.T) {
 	assert.FileExists(t, state)
 }
 
+// Validates: PV-225
 func TestConfigFlagMovesTokenDirectory(t *testing.T) {
 	t.Parallel()
 
@@ -202,6 +207,7 @@ func TestConfigFlagMovesTokenDirectory(t *testing.T) {
 	assert.Equal(t, "gmail:user@gmail.example.com\n", stdout)
 }
 
+// Validates: PV-228
 func TestMissingExplicitConfigFails(t *testing.T) {
 	t.Parallel()
 
@@ -212,6 +218,7 @@ func TestMissingExplicitConfigFails(t *testing.T) {
 	assert.Contains(t, stderr, "confg.toml")
 }
 
+// Validates: PV-226
 func TestUnknownConfigKeyFails(t *testing.T) {
 	t.Parallel()
 
@@ -224,6 +231,7 @@ func TestUnknownConfigKeyFails(t *testing.T) {
 	assert.Contains(t, stderr, "unknown keys: archive_dir")
 }
 
+// Validates: PV-231
 func TestGlobalFlagValidation(t *testing.T) {
 	t.Parallel()
 
@@ -249,6 +257,7 @@ func TestGlobalFlagValidation(t *testing.T) {
 	}
 }
 
+// Validates: PV-231
 func TestJSONLogFormat(t *testing.T) {
 	t.Parallel()
 
@@ -269,6 +278,7 @@ func TestJSONLogFormat(t *testing.T) {
 	assert.Contains(t, stderr, "no matching account")
 }
 
+// Validates: PV-225
 func TestEnvironmentOverridesArchive(t *testing.T) {
 	t.Parallel()
 
@@ -294,6 +304,7 @@ func (l *lazyReader) Read(p []byte) (int, error) {
 	return l.r.Read(p) //nolint:wrapcheck // test reader.
 }
 
+// Validates: PV-220, PV-224
 func TestLogin_GmailRegistersAccount(t *testing.T) {
 	t.Parallel()
 
@@ -387,6 +398,7 @@ func (l *redirectReader) Read(p []byte) (int, error) {
 	return l.r.Read(p) //nolint:wrapcheck // test reader.
 }
 
+// Validates: PV-221
 func TestLogin_OutlookOneSignInAllowsIMAPAndRemoveForgetsBoth(t *testing.T) {
 	t.Parallel()
 
@@ -476,6 +488,7 @@ func TestLogin_OutlookWithoutIMAPKeepsTheAccount(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(env.configDir, "imap_outlook_user@outlook.example.com.json"))
 }
 
+// Validates: PV-110
 func TestRun_SecondRunIsRefusedWhileOneHoldsTheLock(t *testing.T) {
 	t.Parallel()
 
@@ -506,6 +519,7 @@ func TestRun_SecondRunIsRefusedWhileOneHoldsTheLock(t *testing.T) {
 	assert.Equal(t, "gmail:user@gmail.example.com\n", stdout)
 }
 
+// Validates: PV-234
 func TestRun_VersionPrintsTheBuildVersion(t *testing.T) {
 	t.Parallel()
 

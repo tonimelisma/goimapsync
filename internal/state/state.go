@@ -1,5 +1,5 @@
 // Package state stores each account's sync state, such as change tokens, as
-// one JSON file in the state directory (docs/requirements.md D51, D52). State
+// one JSON file in the state directory (D51, D52). State
 // is a rebuildable projection: a missing or unreadable file only costs a full
 // listing, never data.
 package state
