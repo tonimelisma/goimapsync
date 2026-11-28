@@ -1,4 +1,4 @@
-// Package gmail reads Gmail through its REST API (docs/requirements.md D46,
+// Package gmail reads Gmail through its REST API (D46,
 // D140) and decides which archive folder a message belongs in (D31, D32).
 package gmail
 

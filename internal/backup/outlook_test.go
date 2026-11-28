@@ -60,6 +60,7 @@ func (f *outlookFixture) files(t *testing.T) []string {
 	return listFiles(t, f.root)
 }
 
+// Validates: PV-004, PV-053, PV-059
 func TestOutlookMail_FirstBackup(t *testing.T) {
 	f := newOutlookFixture(t)
 	f.srv.AddFolder("u-work", "Work", "")
@@ -84,6 +85,7 @@ func TestOutlookMail_FirstBackup(t *testing.T) {
 	assert.Equal(t, "one", string(data))
 }
 
+// Validates: PV-101, PV-102
 func TestOutlookMail_IncrementalMovesAndDeletes(t *testing.T) {
 	f := newOutlookFixture(t)
 	f.srv.Add("m1", "f-inbox", "one")
@@ -106,6 +108,7 @@ func TestOutlookMail_IncrementalMovesAndDeletes(t *testing.T) {
 	assert.Equal(t, backup.Result{Files: 3}, res)
 }
 
+// Validates: PV-101
 func TestOutlookMail_FolderRenameMovesFiles(t *testing.T) {
 	f := newOutlookFixture(t)
 	f.srv.AddFolder("u-work", "Work", "")
@@ -134,6 +137,7 @@ func TestOutlookMail_DeletedFolderRemovesFiles(t *testing.T) {
 	assert.Equal(t, []string{"Inbox/m2.eml"}, f.files(t))
 }
 
+// Validates: PV-103
 func TestOutlookMail_ExpiredDeltaRelistsFolders(t *testing.T) {
 	f := newOutlookFixture(t)
 	f.srv.Add("m1", "f-inbox", "one")
@@ -251,6 +255,7 @@ func TestOutlookMail_ListingThatExpiresMidwayRestarts(t *testing.T) {
 	assert.Equal(t, backup.Result{Files: 2, Downloaded: 2}, res)
 }
 
+// Validates: PV-107
 func TestOutlookMail_MassDeletionIsWithheldAndRetried(t *testing.T) {
 	f := newOutlookFixture(t)
 	f.srv.AddFolder("u-work", "Work", "")
@@ -279,6 +284,7 @@ func TestOutlookMail_MassDeletionIsWithheldAndRetried(t *testing.T) {
 	assert.Len(t, listFiles(t, f.root+"-aside"), 11)
 }
 
+// Validates: PV-062
 func TestOutlookMail_LongFolderNameIsBackedUp(t *testing.T) {
 	f := newOutlookFixture(t)
 	long := strings.Repeat("ö", 256) // Graph takes 256 characters (F72): 512 bytes
@@ -296,6 +302,7 @@ func TestOutlookMail_LongFolderNameIsBackedUp(t *testing.T) {
 	assert.Equal(t, backup.Result{Files: 1}, res, "found again on the next run")
 }
 
+// Validates: PV-108
 func TestOutlookMail_DryRunSizeIsUnknown(t *testing.T) {
 	f := newOutlookFixture(t)
 	f.srv.Add("m1", "f-inbox", "one")

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Validates: PV-155
 func TestValidMessageID(t *testing.T) {
 	for id, want := range map[string]bool{
 		"<a.b+c@example.com>":          true,
@@ -28,6 +29,7 @@ func TestValidMessageID(t *testing.T) {
 	}
 }
 
+// Validates: PV-156
 func TestHasEncodedWordAndSameMessageID(t *testing.T) {
 	assert.True(t, hasEncodedWord("<=?utf-8?b?aDE3?=-h17@x>"))
 	assert.False(t, hasEncodedWord("<h18?q@x>"))
@@ -40,6 +42,7 @@ func TestHasEncodedWordAndSameMessageID(t *testing.T) {
 	assert.False(t, sameMessageID("<=?utf-8?b?aDE3?=-h17@x>", "<=?utf-8?b?aDE4?=-h17@x>"))
 }
 
+// Validates: PV-153
 func TestNormalFrom(t *testing.T) {
 	assert.Equal(t, "l@example.com", normalFrom("=?iso-8859-2?Q?=A3ukasz_W=F3jcik?= <L@example.com>"))
 	assert.Equal(t, "l@example.com", normalFrom(`"Łukasz Wójcik" <l@example.com>`))
@@ -47,6 +50,7 @@ func TestNormalFrom(t *testing.T) {
 	assert.Equal(t, "not an address", normalFrom(" not an address "))
 }
 
+// Validates: PV-169
 func TestRestoredName(t *testing.T) {
 	assert.Equal(t, "Chats (restored)", restoredName("Chats", nameLimit{runes: 225}))
 	assert.Equal(t, strings.Repeat("ö", 214)+" (restored)", restoredName(strings.Repeat("ö", 300), nameLimit{runes: 225}), "cut in characters")
@@ -54,6 +58,7 @@ func TestRestoredName(t *testing.T) {
 		"and in bytes")
 }
 
+// Validates: PV-153
 func TestKeyOf_FoldedMessageIDLosesTheFold(t *testing.T) {
 	key, ok := keyOf([]byte("Message-ID: <Share-1;rcid_2;\r\n wiid_3@x>\r\nDate: Mon, 02 Mar 2026 10:00:00 +0000\r\nFrom: a@b\r\n\r\nhi\r\n"))
 	require.True(t, ok)
@@ -74,6 +79,7 @@ func hourly(start time.Time, count int) func() (time.Time, bool) {
 	}
 }
 
+// Validates: PV-178
 func TestExpandOccurrences_OpenSeriesKeepsTheLatest(t *testing.T) {
 	start := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -84,6 +90,7 @@ func TestExpandOccurrences_OpenSeriesKeepsTheLatest(t *testing.T) {
 	assert.Equal(t, start.Add((1001-maxExpanded)*time.Hour), got[0])
 }
 
+// Validates: PV-178
 func TestExpandOccurrences_OpenSeriesAtTheCapIsWhole(t *testing.T) {
 	start := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 

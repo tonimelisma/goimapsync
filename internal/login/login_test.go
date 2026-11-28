@@ -103,6 +103,7 @@ func pastePrompts(t *testing.T, shown *url.URL) Prompts {
 	}
 }
 
+// Validates: PV-220
 func TestLogin_GmailPasteURL(t *testing.T) {
 	t.Parallel()
 
@@ -122,6 +123,7 @@ func TestLogin_GmailPasteURL(t *testing.T) {
 	assert.Contains(t, shown.Query().Get("scope"), "https://www.googleapis.com/auth/gmail.insert")
 }
 
+// Validates: PV-221
 func TestLogin_OutlookOneSignInGrantsGraphAndIMAP(t *testing.T) {
 	t.Parallel()
 
@@ -209,6 +211,7 @@ func TestLogin_IdentityFailures(t *testing.T) {
 	}
 }
 
+// Validates: PV-230
 func TestOAuthConfig_MissingClientID(t *testing.T) {
 	t.Parallel()
 
@@ -225,6 +228,7 @@ func TestOAuthConfig_MissingClientID(t *testing.T) {
 	}
 }
 
+// Validates: PV-230
 func TestGoogleCredentials_OverrideIsAPair(t *testing.T) {
 	t.Parallel()
 

@@ -17,6 +17,7 @@ import (
 
 const sourceID = "String {7a5d4f0e-2c1b-4a6e-9f3d-5b8c1e2a7d90} Name pimvaultSource"
 
+// Validates: PV-161, PV-170, PV-175, PV-176, PV-177
 func TestOutlookCalendar_Restore(t *testing.T) {
 	srv := graphtest.New(t)
 	srv.AddCalendar(graph.Calendar{ID: "cal-default", Name: "Calendar", IsDefaultCalendar: true, CanEdit: true})
@@ -104,6 +105,7 @@ END:VEVENT
 	assert.Equal(t, restore.Result{Present: 3}, res)
 }
 
+// Validates: PV-180
 func TestOutlookCalendar_FloatingTimesTakeTheMailboxZone(t *testing.T) {
 	srv := graphtest.New(t)
 	srv.TimeZone = "W. Europe Standard Time" // Outlook names Windows zones
@@ -174,6 +176,7 @@ func TestOutlookCalendar_CalendarFailureFailsItsEvents(t *testing.T) {
 	assert.Equal(t, restore.Result{Failed: 2}, res)
 }
 
+// Validates: PV-178
 func TestOutlookCalendar_CappedSeriesLeavesOutEarlyChanges(t *testing.T) {
 	srv := graphtest.New(t)
 	srv.AddCalendar(graph.Calendar{ID: "cal-default", Name: "Calendar", IsDefaultCalendar: true, CanEdit: true})

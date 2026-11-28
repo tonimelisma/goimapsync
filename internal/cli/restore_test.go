@@ -20,6 +20,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/outlookimap/outlookimaptest"
 )
 
+// Validates: PV-150, PV-172, PV-224
 func TestRestore_GmailMailRoundTrip(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -49,6 +50,7 @@ func TestRestore_GmailMailRoundTrip(t *testing.T) {
 	assert.Len(t, srv.Messages(), 2)
 }
 
+// Validates: PV-151
 func TestMigrate_RefusesSameAccount(t *testing.T) {
 	env, _ := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -69,6 +71,7 @@ func TestMigrate_RefusesMissingArchive(t *testing.T) {
 	assert.Empty(t, srv.Messages())
 }
 
+// Validates: PV-151
 func TestMigrate_FromMatchesArchivedAccounts(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -85,6 +88,7 @@ func TestMigrate_FromMatchesArchivedAccounts(t *testing.T) {
 	assert.Empty(t, srv.Messages())
 }
 
+// Validates: PV-151, PV-163, PV-185
 func TestMigrate_GmailMailIntoOutlookOverIMAP(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")

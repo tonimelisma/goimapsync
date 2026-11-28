@@ -18,6 +18,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/graph"
 )
 
+// Validates: PV-120
 func TestVerify_GmailMail(t *testing.T) {
 	f := newFixture(t)
 	f.srv.AddLabel("Label_1", "Work")
@@ -48,6 +49,7 @@ func TestVerify_GmailMail(t *testing.T) {
 	assert.Equal(t, []string{"Inbox/m2.eml", "Old/m9.eml", "Work/m3.eml"}, f.files(t), "verify writes nothing")
 }
 
+// Validates: PV-120
 func TestVerify_OutlookMail(t *testing.T) {
 	f := newOutlookFixture(t)
 	f.srv.Add("m1", "f-inbox", "Subject: one\r\n\r\nbody")
@@ -68,6 +70,7 @@ func TestVerify_OutlookMail(t *testing.T) {
 	}}, check, "a folder that cannot be read is not compared")
 }
 
+// Validates: PV-120
 func TestVerify_Collections(t *testing.T) {
 	f := newOutlookContactsFixture(t)
 	f.srv.AddContactFolder("cf-friends", "Friends", graph.DefaultContactFolder)
@@ -113,6 +116,7 @@ func TestVerify_OutlookMailRetriesExpiredListingAndSkipsUnusableIDs(t *testing.T
 	assert.Equal(t, backup.Check{Checked: 4}, check, "the expired listing is read again; the unusable ID is left out")
 }
 
+// Validates: PV-121
 func TestCheckFiles(t *testing.T) {
 	dir := t.TempDir()
 	write := func(store archive.Store, folder, id, content string) {

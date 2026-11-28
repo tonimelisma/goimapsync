@@ -68,6 +68,7 @@ func outlookContact(id, name string) graph.Contact {
 	return graph.Contact{ID: id, DisplayName: name, GivenName: name, LastModifiedDateTime: "2026-02-01T00:00:00Z"}
 }
 
+// Validates: PV-014
 func TestOutlookContacts_FirstBackup(t *testing.T) {
 	f := newOutlookContactsFixture(t)
 	f.srv.PageSize = 1
@@ -107,6 +108,7 @@ func TestOutlookContacts_FirstBackup(t *testing.T) {
 	assert.Contains(t, f.read(t, "Contacts/c-acme.vcf"), "FN:Acme\r\n", "FN falls back to the company")
 }
 
+// Validates: PV-102
 func TestOutlookContacts_Changes(t *testing.T) {
 	f := newOutlookContactsFixture(t)
 	f.srv.AddContactFolder("cf-friends", "Friends", graph.DefaultContactFolder)
@@ -129,6 +131,7 @@ func TestOutlookContacts_Changes(t *testing.T) {
 	assert.Equal(t, backup.Result{Files: 2}, res)
 }
 
+// Validates: PV-103
 func TestOutlookContacts_ExpiredDeltaAndRename(t *testing.T) {
 	f := newOutlookContactsFixture(t)
 	f.srv.AddContactFolder("cf-friends", "Friends", graph.DefaultContactFolder)

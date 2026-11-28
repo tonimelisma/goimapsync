@@ -1,5 +1,5 @@
 // Package gpeople reads Google Contacts through the People API
-// (docs/requirements.md D83, D140) and renders contacts as vCard 4.0 (D42).
+// (D83, D140) and renders contacts as vCard 4.0 (D42).
 package gpeople
 
 import (

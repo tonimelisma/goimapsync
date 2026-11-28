@@ -1,5 +1,5 @@
-// Package gcal reads Google Calendar through its REST API (docs/requirements.md
-// D82, D140) and renders events as iCalendar (D7, D43, D150).
+// Package gcal reads Google Calendar through its REST API (D82, D140) and
+// renders events as iCalendar (D7, D43, D150).
 package gcal
 
 import (

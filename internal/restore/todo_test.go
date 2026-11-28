@@ -18,6 +18,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/restore"
 )
 
+// Validates: PV-158, PV-170, PV-183
 func TestOutlookTasks_Restore(t *testing.T) {
 	srv := graphtest.New(t)
 	srv.AddTaskList(graph.TaskList{ID: "l-default", DisplayName: "Tasks", WellknownListName: graph.DefaultTaskList, IsOwner: true})

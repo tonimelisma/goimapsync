@@ -16,6 +16,7 @@ type fakeClock struct{ t time.Time }
 
 func (c *fakeClock) now() time.Time { return c.t }
 
+// Validates: PV-112
 func TestStatusLine_Terminal(t *testing.T) {
 	var out bytes.Buffer
 
@@ -51,6 +52,7 @@ func TestBar(t *testing.T) {
 	assert.Equal(t, "[====================]", bar(0, 0), "nothing to do is done")
 }
 
+// Validates: PV-112
 func TestStatusLine_NotTerminalLogsEvery30Seconds(t *testing.T) {
 	var out bytes.Buffer
 
@@ -101,6 +103,7 @@ func TestStatusLine_EmptyProgressIsNotLogged(t *testing.T) {
 
 // Accounts in progress share the line; a finished account's result is
 // printed with the line out of the way, and the others are drawn again.
+// Validates: PV-109
 func TestStatusLine_TerminalAccountsShareTheLine(t *testing.T) {
 	var out bytes.Buffer
 

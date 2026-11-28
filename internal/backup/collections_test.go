@@ -179,6 +179,7 @@ func TestCollections_FullThenChanges(t *testing.T) {
 	assert.Equal(t, Result{Files: 2}, res)
 }
 
+// Validates: PV-103
 func TestCollections_UnchangedContentIsNotRewritten(t *testing.T) {
 	f := newCollFixture(t)
 	f.src.add("c1", "Calendar")
@@ -291,6 +292,7 @@ func TestCollections_DriftRemovesUnknownDirectories(t *testing.T) {
 	assert.NoDirExists(t, filepath.Join(f.root, "Gone"))
 }
 
+// Validates: PV-100
 func TestCollections_FullListingDeletesEveryUnlistedFile(t *testing.T) {
 	f := newCollFixture(t)
 	f.src.add("c1", "Calendar")
@@ -331,6 +333,7 @@ func TestCollections_ItemsTheSourceFailedToReadAreKept(t *testing.T) {
 	assert.Equal(t, "one", f.read(t, "Calendar/e1.ics"))
 }
 
+// Validates: PV-106
 func TestCollections_DeletedItemsAreKeptAside(t *testing.T) {
 	f := newCollFixture(t)
 	f.src.add("c1", "Work")
@@ -349,6 +352,7 @@ func TestCollections_DeletedItemsAreKeptAside(t *testing.T) {
 		"deleted items are kept aside; the renamed collection's old copy of e1 is not")
 }
 
+// Validates: PV-107
 func TestCollections_MassDeletionIsWithheld(t *testing.T) {
 	f := newCollFixture(t)
 	f.src.add("cal", "Calendar")
@@ -429,6 +433,7 @@ func (f *collFixture) asideFiles(t *testing.T) []string {
 	return paths
 }
 
+// Validates: PV-107
 func TestCollections_ItemsMovedBetweenCollectionsAreNotDeletions(t *testing.T) {
 	f := newCollFixture(t)
 	f.src.add("a", "A")
@@ -474,6 +479,7 @@ func TestCollections_RenamedCollectionWithUnreadItemsKeepsItsOldDirectory(t *tes
 	assert.Empty(t, f.asideFiles(t))
 }
 
+// Validates: PV-108
 func TestCollections_DryRunCountsAndWritesNothing(t *testing.T) {
 	f := newCollFixture(t)
 	f.src.add("c1", "Work")

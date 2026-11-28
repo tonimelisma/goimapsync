@@ -1,23 +1,30 @@
 name: CI
 
 on:
+  pull_request:
+    # `edited`: a description fixed after the push re-runs the checks that read it. Every job runs
+    # on it, so the newest `CI gate` on a commit always reflects all the checks.
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  schedule:
+    # Weekly re-run on main, Tuesdays off the hour: new Go releases and advisories show up here.
+    # The release workflow ignores scheduled runs.
+    - cron: "23 6 * * 2"
   workflow_dispatch:
 
-# Cancel stale PR runs; never cancel push or manual runs.
+# Cancel stale PR runs; never cancel push, scheduled or manual runs.
 concurrency:
-  group: ci-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  group: ci-${{ github.event_name == 'pull_request' && github.head_ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  # Same entry point as local work: format, lint, build, vet, race tests.
-  # The end-to-end test has its own workflow (e2e.yml, D199).
+  # Same entry point as local work: script/verify runs script/check.sh (tidy, format, lint,
+  # build, vet, race tests) and script/process-check. The end-to-end test has its own workflow
+  # (e2e.yml, ADR 0018).
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -38,5 +45,35 @@ jobs:
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-      - name: Check
-        run: script/check.sh
+      - name: script/verify
+        run: script/verify
+
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # pr-check diffs the pull request's base and head
+          persist-credentials: false
+      - name: process-check
+        run: script/process-check
+      - name: pr-check
+        if: github.event_name == 'pull_request'
+        run: script/pr-check
+
+  # The one required status check. It needs every other job and passes only when each of them
+  # succeeded or was skipped, so a cancelled or failed job can never be merged around.
+  gate:
+    name: CI gate
+    if: always()
+    needs: [check, process]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' >/dev/null

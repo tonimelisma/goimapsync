@@ -27,6 +27,7 @@ func TestLoad_MissingIsEmpty(t *testing.T) {
 	assert.Nil(t, st.GmailMail)
 }
 
+// Validates: PV-104
 func TestSaveLoad(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "state")
 	store := state.NewStore(dir)
@@ -44,6 +45,7 @@ func TestSaveLoad(t *testing.T) {
 	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
 }
 
+// Validates: PV-104
 func TestLoad_CorruptReturnsEmptyAndError(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "gmail_user@gmail.example.com.json"), []byte("{"), 0o600))

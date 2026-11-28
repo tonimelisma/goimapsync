@@ -61,6 +61,7 @@ func TestGetJSON(t *testing.T) {
 	assert.Equal(t, "EXPIRED_SYNC_TOKEN", apiErr.Reason)
 }
 
+// Validates: PV-111
 func TestRateLimited(t *testing.T) {
 	cases := map[string]struct {
 		status int

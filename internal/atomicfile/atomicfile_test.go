@@ -12,6 +12,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/atomicfile"
 )
 
+// Validates: PV-063
 func TestWrite_CreatesAndReplaces(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "item.eml")
 
@@ -31,6 +32,7 @@ func TestWrite_CreatesAndReplaces(t *testing.T) {
 	assert.Len(t, entries, 1, "no temp file left behind")
 }
 
+// Validates: PV-063
 func TestWrite_FailedRenameLeavesNoTempFile(t *testing.T) {
 	dir := t.TempDir()
 	// A non-empty directory at the target makes the rename fail, even as root.
@@ -58,6 +60,7 @@ func TestIsTemp(t *testing.T) {
 	assert.False(t, atomicfile.IsTemp(".pimvault-123.eml"))
 }
 
+// Validates: PV-064
 func TestCleanDir(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, atomicfile.CleanDir(filepath.Join(dir, "missing"), 0))

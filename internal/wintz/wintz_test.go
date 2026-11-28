@@ -8,6 +8,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/wintz"
 )
 
+// Validates: PV-179
 func TestIANA(t *testing.T) {
 	for windows, want := range map[string]string{
 		"FLE Standard Time":       "Europe/Kiev",

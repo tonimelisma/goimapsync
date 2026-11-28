@@ -67,6 +67,7 @@ func (e *testEnv) addSignedIn(t *testing.T, id string) {
 	}))
 }
 
+// Validates: PV-001, PV-105, PV-224
 func TestBackup_GmailAccount(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -115,6 +116,7 @@ func TestBackup_UnknownAccountQuery(t *testing.T) {
 	assert.Contains(t, stderr, "nobody")
 }
 
+// Validates: PV-105, PV-232
 func TestBackup_FailedItemExitsOne(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -130,6 +132,7 @@ func TestBackup_FailedItemExitsOne(t *testing.T) {
 	assert.Contains(t, stderr, "mail: 1 items failed")
 }
 
+// Validates: PV-105
 func TestBackup_OtherAccountsContinueAfterFailure(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -152,6 +155,7 @@ func TestBackup_OtherAccountsContinueAfterFailure(t *testing.T) {
 	assert.Contains(t, stderr, "broken")
 }
 
+// Validates: PV-232, PV-233
 func TestBackup_RevokedSignInNeedsLogin(t *testing.T) {
 	env, _ := backupEnv(t)
 
@@ -175,6 +179,7 @@ func TestBackup_RevokedSignInNeedsLogin(t *testing.T) {
 	assert.Contains(t, stderr, "run pimvault login gmail and sign in as user@gmail.example.com")
 }
 
+// Validates: PV-233
 func TestBackup_RejectedAccessTokenNeedsLogin(t *testing.T) {
 	env := newTestEnv(t)
 	require.NoError(t, os.MkdirAll(env.configDir, 0o700))
@@ -204,6 +209,7 @@ func TestBackup_RejectedAccessTokenNeedsLogin(t *testing.T) {
 	assert.Contains(t, stderr, "2 of 2 accounts had failures, 1 sign-in needed")
 }
 
+// Validates: PV-064
 func TestBackup_RemovesLeftoverTempFiles(t *testing.T) {
 	env, _ := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -237,6 +243,7 @@ func TestBackup_RemovesLeftoverTempFiles(t *testing.T) {
 	assert.FileExists(t, young)
 }
 
+// Validates: PV-001
 func TestBackup_OutlookAccount(t *testing.T) {
 	env := newTestEnv(t)
 	srv := graphtest.New(t)
@@ -270,6 +277,7 @@ func TestBackup_OutlookAccount(t *testing.T) {
 	assert.FileExists(t, filepath.Join(mail, "Archive", "m1.eml"))
 }
 
+// Validates: PV-001
 func TestBackup_GmailCalendars(t *testing.T) {
 	env, _ := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -284,6 +292,7 @@ func TestBackup_GmailCalendars(t *testing.T) {
 	assert.FileExists(t, filepath.Join(env.home, "data", "pimvault", "gmail_user@gmail.example.com", "calendars", "Calendar", "e1.ics"))
 }
 
+// Validates: PV-001
 func TestBackup_GmailContacts(t *testing.T) {
 	env, _ := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -298,6 +307,7 @@ func TestBackup_GmailContacts(t *testing.T) {
 	assert.FileExists(t, filepath.Join(env.home, "data", "pimvault", "gmail_user@gmail.example.com", "contacts", "Contacts", "c1.vcf"))
 }
 
+// Validates: PV-106, PV-107, PV-232
 func TestBackup_DeletionsAreKeptAsideAndMassDeletionIsWithheld(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -337,6 +347,7 @@ func TestBackup_DeletionsAreKeptAsideAndMassDeletionIsWithheld(t *testing.T) {
 	assert.Contains(t, stdout, "gmail:user@gmail.example.com")
 }
 
+// Validates: PV-108
 func TestBackup_DryRunCountsAndWritesNothing(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")
@@ -359,6 +370,7 @@ func TestBackup_DryRunCountsAndWritesNothing(t *testing.T) {
 // Accounts are backed up at the same time: Gmail's answers are held until
 // Outlook has been asked, which one account after another never reaches,
 // since Gmail comes first. Results still print in the accounts' order.
+// Validates: PV-002, PV-109
 func TestBackup_AccountsRunAtTheSameTime(t *testing.T) {
 	env, srv := backupEnv(t)
 	env.addSignedIn(t, "gmail:user@gmail.example.com")

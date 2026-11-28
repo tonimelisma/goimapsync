@@ -122,6 +122,7 @@ func TestLinksToOtherHostsAreRefused(t *testing.T) {
 	assert.Contains(t, err.Error(), "not the Graph host")
 }
 
+// Validates: PV-180
 func TestMailboxTimeZone(t *testing.T) {
 	for body, want := range map[string]string{
 		`{"timeZone":"Europe/Helsinki","workingHours":{"timeZone":{"name":"Pacific Standard Time"}}}`: "Europe/Helsinki",
@@ -142,6 +143,7 @@ func TestMailboxTimeZone(t *testing.T) {
 	}
 }
 
+// Validates: PV-159
 func TestNewContactFingerprint(t *testing.T) {
 	written := graph.NewContact{
 		DisplayName: "Ann", Birthday: "1996-11-16T11:59:00Z", PersonalNotes: "a\nb",
@@ -162,6 +164,7 @@ func TestNewContactFingerprint(t *testing.T) {
 	assert.NotEqual(t, written.Fingerprint(), read.Fingerprint())
 }
 
+// Validates: PV-160
 func TestAllContacts_AccountWithoutTheFolderHasNone(t *testing.T) {
 	for _, status := range []int{http.StatusNotFound, http.StatusBadRequest, http.StatusForbidden} {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

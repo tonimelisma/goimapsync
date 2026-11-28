@@ -89,6 +89,7 @@ func photo(url string, isDefault bool) string {
 	return `"photos": [{"url": "` + url + `", "default": ` + d + `}]`
 }
 
+// Validates: PV-014, PV-061
 func TestGoogleContacts_FirstBackup(t *testing.T) {
 	f := newGpeopleFixture(t)
 	f.srv.PageSize = 1
@@ -115,6 +116,7 @@ func TestGoogleContacts_FirstBackup(t *testing.T) {
 	assert.NotContains(t, f.read(t, "c2"), "PHOTO", "default avatars are skipped (D151)")
 }
 
+// Validates: PV-102
 func TestGoogleContacts_Changes(t *testing.T) {
 	f := newGpeopleFixture(t)
 	f.srv.Put(contact(t, "c1", "Ann"))
@@ -152,6 +154,7 @@ func TestGoogleContacts_LabelRenameRewritesMembers(t *testing.T) {
 	assert.Contains(t, f.read(t, "c1"), "CATEGORIES:Pals\r\n")
 }
 
+// Validates: PV-103
 func TestGoogleContacts_ExpiredToken(t *testing.T) {
 	f := newGpeopleFixture(t)
 	f.srv.Put(contact(t, "c1", "Ann"))

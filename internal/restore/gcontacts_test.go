@@ -16,6 +16,7 @@ import (
 	"github.com/tonimelisma/pimvault/internal/vcardfile"
 )
 
+// Validates: PV-158, PV-181
 func TestGoogleContacts_Restore(t *testing.T) {
 	srv := gpeopletest.New(t)
 	srv.SetGroup("contactGroups/friends1", "Friends")

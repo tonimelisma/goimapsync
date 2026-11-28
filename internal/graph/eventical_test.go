@@ -67,6 +67,7 @@ func meeting() graph.Event {
 	return e
 }
 
+// Validates: PV-013
 func TestEncodeSeries_SingleEvent(t *testing.T) {
 	e := meeting()
 	attachments := map[string][]graph.Attachment{e.ID: {
@@ -98,6 +99,7 @@ func TestEncodeSeries_AllDay(t *testing.T) {
 	golden(t, "allday", got)
 }
 
+// Validates: PV-054
 func TestEncodeSeries_SeriesWithExceptions(t *testing.T) {
 	e := graph.Event{
 		ID:                    "AAMkMaster=",
@@ -182,6 +184,7 @@ func TestEncodeSeries_Patterns(t *testing.T) {
 	}
 }
 
+// Validates: PV-179
 func TestEncodeSeries_UnknownZoneIsUTC(t *testing.T) {
 	e := graph.Event{
 		ID: "x", ICalUID: "x", LastModifiedDateTime: "2026-01-01T00:00:00Z", OriginalStartTimeZone: "tzone://Microsoft/Custom",
@@ -195,6 +198,7 @@ func TestEncodeSeries_UnknownZoneIsUTC(t *testing.T) {
 
 func bytesReader(b []byte) *bytes.Reader { return bytes.NewReader(b) }
 
+// Validates: PV-161
 func TestEncodeSeries_UIDFromOtherSystems(t *testing.T) {
 	// A global object ID wrapping a Google UID (MS-OXOCAL PidLidGlobalObjectId).
 	data := append([]byte("vCal-Uid\x01\x00\x00\x00"), []byte("abc123@google.com\x00")...)
