@@ -49,8 +49,8 @@ var vaultName = regexp.MustCompile(`^[A-Za-z0-9-]{3,24}$`)
 // FromEnv returns the Key Vault secrets reached with the access token in
 // PIMVAULT_E2E_ACCESS_TOKEN, in the vault named in PIMVAULT_E2E_KEY_VAULT
 // (D202): in GitHub Actions a short-lived token the workflow gets from Entra
-// ID for GitHub's OIDC token; on the owner's Mac the owner's own
-// `az account get-access-token --resource https://vault.azure.net`.
+// ID for GitHub's OIDC token; in a cloud session the token the session-start
+// hook gets for the shared cloud app (script/live/vault-token).
 func FromEnv(ctx context.Context) (*Secrets, error) {
 	token := os.Getenv("PIMVAULT_E2E_ACCESS_TOKEN")
 	if token == "" {

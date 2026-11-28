@@ -102,19 +102,25 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   unless `CLAUDE_CODE_REMOTE=true`. It installs gcc, curl and git if missing
   (race tests need cgo), the Go release from `go.mod` (through the module
   proxy, or from go.dev when no Go 1.21+ is present), golangci-lint built with
-  that Go, and the module cache. Cold: about a minute on a 4-core cloud
-  container; warm: under a second.
+  that Go, and the module cache, then exports the Key Vault token for live
+  probes (below). Cold: about a minute on a 4-core cloud container; warm: a
+  few seconds.
 - Full check: `script/check.sh`. Validate workflow changes with `actionlint`
   (`go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12`).
 - Closing the loop needs no Docker: the unit tests drive the real code against
   in-process fakes (`internal/outlookimap/outlookimaptest` is an IMAP server
-  with Outlook.com's folders and XOAUTH2). Cloud sessions hold no Key Vault
-  credential (D201, D202), so live probes over HTTPS (Gmail, Graph) run on
-  the owner's Mac: `go run ./script/live/tokens -out DIR` with the owner's
-  Azure CLI token (see "Re-sign-in when a test token fails"), then
-  `go build -o /tmp/pimvault ./cmd/pimvault` and run it with
-  `XDG_CONFIG_HOME=DIR`. IMAP (port 993) is refused in cloud sessions;
-  anything needing it runs through the end-to-end workflow.
+  with Outlook.com's folders and XOAUTH2). Live probes over HTTPS (Gmail,
+  Graph) run in the cloud session itself (D201, D202): the session-start
+  hook exports a Key Vault token for the test vault as
+  `PIMVAULT_E2E_ACCESS_TOKEN` (with `PIMVAULT_E2E_KEY_VAULT`), so
+  `go run ./script/live/tokens -out DIR` signs pimvault in as the test
+  accounts; then `go build -o /tmp/pimvault ./cmd/pimvault` and run it with
+  `XDG_CONFIG_HOME=DIR`. The token lasts about an hour; renew it with
+  `export PIMVAULT_E2E_ACCESS_TOKEN="$(script/live/vault-token)"`. Without
+  the environment's `MELISMA_SECRETS_CLIENT_SECRET` or the network to Entra
+  ID and the vault, the hook says why and exports nothing. IMAP (port 993)
+  is refused in cloud sessions; anything needing it runs through the
+  end-to-end workflow.
 - End-to-end test (D193, D199): `.github/workflows/e2e.yml` runs
   `go test -tags e2e -timeout 40m ./internal/e2e/` only in GitHub Actions,
   never on a developer machine or the owner's server. It runs on every push
@@ -139,7 +145,8 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
   the GitHub environment `e2e` (variables `AZURE_CLIENT_ID`,
   `AZURE_TENANT_ID`, `AZURE_KEY_VAULT`) and exchanges GitHub's OIDC token
   at Entra ID for a Key Vault token of the app `gh-pimvault-e2e`, whose
-  only federated credential is `repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e` (the repository uses immutable OIDC subjects).
+  only federated credential trusts this repository's immutable OIDC subject
+  for the environment `e2e`.
   The Go code reads `PIMVAULT_E2E_ACCESS_TOKEN` and
   `PIMVAULT_E2E_KEY_VAULT`; each stored refresh adds a secret version.
   The weekly run re-enables its own workflow so GitHub does not disable the schedule, and
@@ -149,24 +156,27 @@ run on `main`, e2e on pushes, pull requests or a `repository_dispatch`
 - Re-sign-in when a test token fails (D195, D201, D202). The Google app is in
   production, so sign-ins no longer expire weekly; sign a test account in
   again only when its stored token was revoked or the e2e run says it fails.
-  It runs in a local session on the owner's Mac, where the owner's Azure
-  CLI user can read and set the vault's secrets:
-  1. `PIMVAULT_E2E_ACCESS_TOKEN=$(az account get-access-token --resource https://vault.azure.net --query accessToken -o tsv) PIMVAULT_E2E_KEY_VAULT=kv-pimvault-ci go run ./script/live/e2elogin -in /tmp/e2e-redirect gmail >/tmp/e2e-login.log 2>&1 &`
+  It runs in a cloud session, with the Key Vault token the session-start
+  hook exported (the shared cloud sign-in may read and set the vault's
+  secrets):
+  1. `go run ./script/live/e2elogin -in /tmp/e2e-redirect gmail >/tmp/e2e-login.log 2>&1 &`
      (or `outlook`; background; the same process keeps the PKCE state).
-  2. Give the owner the URL from `/tmp/e2e-login.log`. The owner opens it on
-     the phone in a private tab, signs in as the test account, allows access
-     and pastes back the address the browser failed to load
+  2. Give the maintainer the URL from `/tmp/e2e-login.log`. They open it on
+     a phone in a private tab, sign in as the test account, allow access
+     and paste back the address the browser failed to load
      (`http://127.0.0.1:53682/?…` for Gmail, `http://localhost:53682/?…` for
      Outlook).
   3. `printf '%s\n' 'ADDRESS' >/tmp/e2e-redirect`, then read the log: it
      says it stored the tokens, or why not. It refuses any account other than
      the one the secret already holds. On first setup, when the secret holds
      no token yet, add `-account EMAIL` with the test account's address
-     (from the owner; never committed).
+     (from the maintainer; never committed).
   4. Dispatch the end-to-end workflow for `main` to confirm.
 - Network hosts a cloud session needs: `proxy.golang.org`,
   `sum.golang.org`, `go.dev`, `dl.google.com`, `github.com` and Ubuntu's apt
-  mirrors for setup.
+  mirrors for setup; `login.microsoftonline.com` and
+  `kv-pimvault-ci.vault.azure.net` for the Key Vault token; the Google and
+  Microsoft API hosts for live probes.
 
 ## Owner setup
 
@@ -176,11 +186,14 @@ One-time steps only the owner can do; agents never handle secret values.
   APIs the Google app uses.
 - Azure (D202): Key Vault `kv-pimvault-ci` with the test token secrets, the
   Entra ID app `gh-pimvault-e2e` (Key Vault Secrets Officer on that vault,
-  one federated credential for the immutable OIDC subject
-  `repo:tonimelisma@59022391/pimvault@1468242798:environment:e2e`) and the GitHub environment `e2e` holding its IDs as variables. No key or
-  client secret exists; GitHub and the cloud environment hold no secret.
-- `az login` on the Mac, as a user who can read and set secrets in
-  `kv-pimvault-ci`.
+  one federated credential for this repository's immutable OIDC subject of
+  the environment `e2e`) and the GitHub environment `e2e` holding its IDs as
+  variables. No key or client secret exists for it; GitHub holds no secret.
+- The cloud sessions' shared Entra ID app `cloud-sessions-reader` (its
+  client secret is the cloud environment's `MELISMA_SECRETS_CLIENT_SECRET`)
+  has Key Vault Secrets Officer on `kv-pimvault-ci`, and the cloud
+  environment allows `login.microsoftonline.com` and
+  `kv-pimvault-ci.vault.azure.net`.
 - A re-sign-in, when a test token fails: open the URL the agent gives you
   in a private tab, sign in as the test account, paste back the failed
   address.
@@ -208,7 +221,7 @@ One-time steps only the owner can do; agents never handle secret values.
   change: an F-row with the date, account type and evidence, a line in
   `docs/research/api-quirks.md`, a fake that reproduces it and a test. Probe
   undocumented behaviour live before relying on it (`go run
-  ./script/live/tokens -out DIR` on the owner's Mac signs in as the test
+  ./script/live/tokens -out DIR` in a cloud session signs in as the test
   accounts).
 - Incidents: when a live run loses, duplicates or misreports data, or touches
   the wrong account, add an entry to `docs/incidents.md` in the fix's PR.

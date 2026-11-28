@@ -1,6 +1,8 @@
 #!/bin/bash
 # Prepares Claude Code cloud sessions (CLAUDE_CODE_REMOTE=true): a C compiler
-# for race tests, the Go toolchain from go.mod and the pinned golangci-lint.
+# for race tests, the Go toolchain from go.mod, the pinned golangci-lint and,
+# when the environment has the shared Key Vault client secret, an access token
+# for the end-to-end test vault (live probes and re-sign-in, D202).
 # Idempotent; a warm rerun takes seconds. Does nothing on other machines.
 set -euo pipefail
 
@@ -63,4 +65,25 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
     echo "export GOTOOLCHAIN=${want}"
     echo "export PATH=\"${gobin}:$(dirname "$(command -v go)"):\$PATH\""
   } >> "${CLAUDE_ENV_FILE}"
+fi
+
+# Key Vault access for live probes and re-sign-in (D202): a token for the
+# test vault, from the environment's MELISMA_SECRETS_CLIENT_SECRET, handed to
+# later commands as PIMVAULT_E2E_ACCESS_TOKEN and PIMVAULT_E2E_KEY_VAULT. It
+# never fails the session: without the secret, the network or a working
+# sign-in, it says why and the session goes on without live access. The token
+# is never printed.
+vault="kv-pimvault-ci"
+if [ -z "${MELISMA_SECRETS_CLIENT_SECRET:-}" ]; then
+  echo "session-start: no MELISMA_SECRETS_CLIENT_SECRET; live probes and re-sign-in are unavailable"
+elif [ -z "${CLAUDE_ENV_FILE:-}" ]; then
+  echo "session-start: no CLAUDE_ENV_FILE to hand the Key Vault token to later commands"
+elif token="$(PIMVAULT_E2E_KEY_VAULT="${vault}" script/live/vault-token)"; then
+  {
+    echo "export PIMVAULT_E2E_KEY_VAULT=${vault}"
+    echo "export PIMVAULT_E2E_ACCESS_TOKEN='${token}'"
+  } >> "${CLAUDE_ENV_FILE}"
+  echo "session-start: Key Vault token for ${vault} exported (about an hour; renew with export PIMVAULT_E2E_ACCESS_TOKEN=\"\$(script/live/vault-token)\")"
+else
+  echo "session-start: no Key Vault token (reason above); live probes and re-sign-in are unavailable"
 fi

@@ -1,10 +1,10 @@
 // Command e2elogin signs a test account in and stores its tokens in Azure
 // Key Vault (D201, D202), when a stored token was revoked or fails. It runs
-// on the owner's Mac with the owner's own Azure CLI access token:
+// in a cloud session, with the Key Vault access token the session-start hook
+// exports as PIMVAULT_E2E_ACCESS_TOKEN and PIMVAULT_E2E_KEY_VAULT
+// (script/live/vault-token):
 //
-//	PIMVAULT_E2E_ACCESS_TOKEN=$(az account get-access-token --resource https://vault.azure.net --query accessToken -o tsv) \
-//	PIMVAULT_E2E_KEY_VAULT=kv-pimvault-ci \
-//	  go run ./script/live/e2elogin [-in FILE] [-account EMAIL] gmail|outlook
+//	go run ./script/live/e2elogin [-in FILE] [-account EMAIL] gmail|outlook
 //
 // It prints the sign-in URL, then waits for the address the browser was
 // sent to. With -in it creates FILE as a named pipe and reads that address
@@ -13,7 +13,7 @@
 // PKCE state. Without -in it reads the address from stdin.
 //
 // It refuses to store an account other than the one the secret already
-// holds, so the owner's own account never becomes a test account. When the
+// holds, so a real account never becomes a test account. When the
 // secret holds no token yet (first setup), -account names the test account
 // to accept. It prints the provider only, never the account's email.
 package main
