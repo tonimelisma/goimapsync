@@ -20,6 +20,3 @@ require (
 	github.com/teambition/rrule-go v1.8.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
-
-// OnTokenChange hook; see docs/requirements.md D134.
-replace golang.org/x/oauth2 => github.com/tonimelisma/oauth2 v0.0.0-20260209071456-249baba404ab

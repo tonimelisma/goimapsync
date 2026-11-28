@@ -224,6 +224,81 @@ func TestTokenSource_SavesRefreshedToken(t *testing.T) {
 }
 
 // Validates: PV-235
+func TestTokenSource_ValidTokenIsNotSaved(t *testing.T) {
+	t.Parallel()
+
+	p := newFakeProvider(t)
+	valid := &oauth2.Token{AccessToken: "still-good", RefreshToken: "refresh-old", Expiry: time.Now().Add(time.Hour)}
+
+	saves := 0
+	src := TokenSource(context.Background(), p.config(), valid, func(*oauth2.Token) error {
+		saves++
+
+		return nil
+	}, slog.New(slog.DiscardHandler))
+
+	for range 3 {
+		tok, err := src.Token()
+		require.NoError(t, err)
+		assert.Equal(t, "still-good", tok.AccessToken)
+	}
+
+	assert.Zero(t, saves, "a token that was not refreshed is already saved")
+	assert.Nil(t, p.lastTokenRequest(), "nothing was refreshed")
+}
+
+// Requests of one account share its token source: a refresh several of them
+// wait for is saved once, and an older token is never saved after a newer
+// one.
+//
+// Validates: PV-235
+func TestTokenSource_ConcurrentUseSavesEachRefreshOnce(t *testing.T) {
+	t.Parallel()
+
+	p := newFakeProvider(t)
+	expired := &oauth2.Token{AccessToken: "old", RefreshToken: "refresh-old", Expiry: time.Now().Add(-time.Hour)}
+
+	var (
+		mu    sync.Mutex
+		saved []*oauth2.Token
+	)
+
+	src := TokenSource(context.Background(), p.config(), expired, func(tok *oauth2.Token) error {
+		mu.Lock()
+		defer mu.Unlock()
+
+		saved = append(saved, tok)
+
+		return nil
+	}, slog.New(slog.DiscardHandler))
+
+	got := make(chan string, 8)
+
+	var wg sync.WaitGroup
+	for range cap(got) {
+		wg.Go(func() {
+			tok, err := src.Token()
+			if err != nil {
+				got <- err.Error()
+
+				return
+			}
+
+			got <- tok.AccessToken
+		})
+	}
+	wg.Wait()
+	close(got)
+
+	for access := range got {
+		assert.Equal(t, "access-refresh_token", access)
+	}
+
+	require.Len(t, saved, 1)
+	assert.Equal(t, "refresh-new", saved[0].RefreshToken)
+}
+
+// Validates: PV-235
 func TestTokenSource_SaveFailureStillReturnsToken(t *testing.T) {
 	t.Parallel()
 

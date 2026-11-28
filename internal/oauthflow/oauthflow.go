@@ -5,10 +5,9 @@
 // The flow is paste URL: authorization code with PKCE, where the user signs
 // in on any device and pastes the address the browser was redirected to.
 //
-// Adapted from github.com/tonimelisma/onedrive-go (internal/graph auth). It
-// relies on the OnTokenChange hook of github.com/tonimelisma/oauth2, a fork of
-// golang.org/x/oauth2. This module must not import pimvault code, so it can
-// later move to its own repository.
+// Adapted from github.com/tonimelisma/onedrive-go (internal/graph auth), on
+// upstream golang.org/x/oauth2. This package must not import pimvault code,
+// so it can later move to its own repository.
 package oauthflow
 
 import (
@@ -24,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -129,18 +129,48 @@ func TokenSource(
 	save func(*oauth2.Token) error,
 	logger *slog.Logger,
 ) oauth2.TokenSource {
-	persisting := *cfg
-	persisting.OnTokenChange = func(refreshed *oauth2.Token) {
-		if err := save(refreshed); err != nil {
-			logger.Warn("save refreshed token", slog.String("error", err.Error()))
+	return &savingSource{src: cfg.TokenSource(ctx, tok), save: save, logger: logger, last: tok}
+}
 
-			return
-		}
+// savingSource wraps the config's token source, which returns the same token
+// until it refreshes it: a token that differs from the last one returned is a
+// refreshed one, and is saved. The lock covers the call to the wrapped source
+// too, so tokens are compared and saved in the order they were issued and an
+// older token is never saved over a newer one; the wrapped source serializes
+// its callers anyway.
+type savingSource struct {
+	src    oauth2.TokenSource
+	save   func(*oauth2.Token) error
+	logger *slog.Logger
 
-		logger.Debug("saved refreshed token", slog.Time("expiry", refreshed.Expiry))
+	mu   sync.Mutex
+	last *oauth2.Token
+}
+
+func (s *savingSource) Token() (*oauth2.Token, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tok, err := s.src.Token()
+	if err != nil {
+		return nil, err //nolint:wrapcheck // as the wrapped source returns it: callers test for *oauth2.RetrieveError.
 	}
 
-	return persisting.TokenSource(ctx, tok)
+	if s.last != nil && tok.AccessToken == s.last.AccessToken && tok.RefreshToken == s.last.RefreshToken {
+		return tok, nil
+	}
+
+	s.last = tok
+
+	if err := s.save(tok); err != nil {
+		s.logger.Warn("save refreshed token", slog.String("error", err.Error()))
+
+		return tok, nil
+	}
+
+	s.logger.Debug("saved refreshed token", slog.Time("expiry", tok.Expiry))
+
+	return tok, nil
 }
 
 // maxTokenResponse bounds a token response read into memory.
